@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EXTRACCIÓN — CASO 41 Expediente 9</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+:root {
+  --bg: #030303;
+  --surface: #080808;
+  --border: #1a1a1a;
+  --text: #b8b8b8;
+  --dim: #555;
+  --red: #c0392b;
+  --redglow: rgba(192,57,43,0.15);
+  --amber: #c8892a;
+  --green: #2e7d32;
+  --white: #e8e8e8;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ═══════════════════════════════════════════
+   INTRO / NAME SCREENS
+═══════════════════════════════════════════ */
+.fullscreen {
+  position: fixed; inset: 0; background: #000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 2000; gap: 0;
+  transition: opacity 0.8s;
+}
+.fullscreen.out { opacity: 0; pointer-events: none; }
+.fullscreen.gone { display: none; }
+
+#bootScreen { gap: 6px; padding: 40px; }
+.boot-line {
+  font-size: 12px; color: #333; letter-spacing: .12em;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 0.3s, transform 0.3s;
+  text-align: left; width: min(500px,90vw);
+}
+.boot-line.on { opacity: 1; transform: none; }
+.boot-line.red { color: #7a1a1a; }
+.boot-line.amber { color: #8a5a1a; }
+.boot-line.white { color: #aaa; }
+
+#nameScreen { gap: 32px; }
+.name-label {
+  font-size: 11px; color: #444; letter-spacing: .3em; text-transform: uppercase;
+}
+.name-box {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  width: min(380px, 90vw);
+}
+.name-title { font-size: 13px; color: #666; letter-spacing: .15em; text-align: center; line-height: 1.8; }
+.name-input {
+  width: 100%; background: transparent; border: none; border-bottom: 1px solid #2a2a2a;
+  color: #ccc; font-family: inherit; font-size: 20px; text-align: center;
+  padding: 10px 0; outline: none; letter-spacing: .1em;
+  transition: border-color .3s;
+}
+.name-input:focus { border-color: #555; }
+.name-input::placeholder { color: #222; }
+.name-submit {
+  background: transparent; border: 1px solid #2a2a2a; color: #555;
+  padding: 10px 28px; font-family: inherit; font-size: 11px;
+  letter-spacing: .2em; text-transform: uppercase; cursor: pointer;
+  transition: all .2s;
+}
+.name-submit:hover { border-color: #555; color: #aaa; }
+.name-fine-print { font-size: 10px; color: #222; text-align: center; line-height: 2; margin-top: 8px; }
+
+/* ═══════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════ */
+#app {
+  width: min(1180px, 97vw);
+  height: min(90vh, 900px);
+  display: grid;
+  grid-template-rows: 44px 1fr 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 60px rgba(0,0,0,.9);
+  overflow: hidden;
+  position: relative;
+}
+
+/* TOP BAR */
+#topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; border-bottom: 1px solid var(--border);
+  background: #060606; font-size: 11px; letter-spacing: .1em; color: #444;
+  flex-shrink: 0;
+}
+.tb-left { display: flex; gap: 16px; align-items: center; }
+.tb-right { display: flex; gap: 12px; align-items: center; }
+.tb-tag {
+  padding: 3px 8px; border: 1px solid #181818; border-radius: 3px;
+  font-size: 10px; letter-spacing: .08em; background: #050505;
+}
+.tb-tag.live { color: #c0392b; border-color: #3a1010; }
+.tb-tag.ok { color: #2e7d32; border-color: #1a3a1a; }
+.tb-tag.warn { color: #c8892a; border-color: #3a2a10; }
+#clockDisplay { color: #888; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* BODY SPLIT */
+#body {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  min-height: 0;
+}
+@media (max-width: 800px) {
+  #body { grid-template-columns: 1fr; }
+  #sidebar { display: none; }
+}
+
+/* MAIN PANEL */
+#main {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* PHONE CHROME — wraps the fake phone UI */
+#phoneChrome {
+  flex: 1; display: flex; flex-direction: column; min-height: 0;
+  position: relative;
+}
+#phoneStatusBar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 14px; background: #050505;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; color: #333; letter-spacing: .08em; flex-shrink: 0;
+}
+#phoneStatusBar span { transition: color .5s; }
+#phoneContent {
+  flex: 1; overflow-y: auto; padding: 20px 22px;
+  min-height: 0;
+  scrollbar-width: thin; scrollbar-color: #1a1a1a transparent;
+}
+#phoneContent::-webkit-scrollbar { width: 4px; }
+#phoneContent::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+
+/* NARRATIVE TEXT */
+.scene-title {
+  font-size: 11px; color: #444; letter-spacing: .2em; text-transform: uppercase;
+  margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #111;
+}
+.scene-body { color: var(--text); line-height: 1.85; font-size: 13px; }
+.scene-body p { margin-bottom: 12px; }
+.scene-body .hl { color: var(--white); }
+.scene-body .danger { color: #c0392b; }
+.scene-body .warn { color: var(--amber); }
+.scene-body .dim { color: var(--dim); font-size: 12px; }
+.scene-body .block {
+  border-left: 2px solid #1a1a1a; padding: 10px 14px;
+  margin: 12px 0; background: #050505;
+  font-size: 12px; line-height: 1.9; color: #888;
+}
+.scene-body .block.red { border-color: #3a1010; color: #c08080; }
+.scene-body .block.amber { border-color: #3a2a10; color: #b89060; }
+.scene-body .GLITCH {
+  display: inline-block; position: relative;
+  color: var(--white);
+}
+.scene-body .GLITCH::before, .scene-body .GLITCH::after {
+  content: attr(data-t); position: absolute; top: 0; left: 0;
+  opacity: .6; clip-path: inset(0 0 80% 0);
+}
+.scene-body .GLITCH::before { color: #c0392b; transform: translateX(2px); animation: ga .7s infinite steps(4); }
+.scene-body .GLITCH::after  { color: #2980b9; transform: translateX(-2px); animation: gb .9s infinite steps(3); }
+@keyframes ga { 0%{clip-path:inset(10% 0 80% 0)} 25%{clip-path:inset(40% 0 40% 0)} 50%{clip-path:inset(70% 0 10% 0)} 75%{clip-path:inset(20% 0 65% 0)} 100%{clip-path:inset(5% 0 88% 0)} }
+@keyframes gb { 0%{clip-path:inset(60% 0 20% 0)} 33%{clip-path:inset(10% 0 70% 0)} 66%{clip-path:inset(50% 0 30% 0)} 100%{clip-path:inset(80% 0 5% 0)} }
+
+/* CHOICES */
+#choices {
+  padding: 14px 22px; border-top: 1px solid #0d0d0d;
+  display: flex; flex-direction: column; gap: 7px;
+  flex-shrink: 0; background: #040404;
+}
+.choice-btn {
+  background: transparent; border: 1px solid #141414;
+  color: #777; font-family: inherit; font-size: 12px;
+  text-align: left; padding: 9px 12px; cursor: pointer;
+  letter-spacing: .04em; transition: all .15s;
+  border-radius: 3px;
+}
+.choice-btn:hover { border-color: #444; color: #ccc; background: #0a0a0a; }
+.choice-btn:disabled { opacity: .3; cursor: not-allowed; }
+.choice-btn.danger-choice { border-color: #3a1010; color: #c07070; }
+.choice-btn.danger-choice:hover { border-color: #c0392b; color: #ff9090; background: #0f0505; }
+
+/* PHONE APP GRID */
+.app-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0;
+}
+.app-icon {
+  border: 1px solid #141414; background: #060606;
+  border-radius: 8px; padding: 14px 8px 10px;
+  text-align: center; cursor: pointer; transition: all .15s;
+}
+.app-icon:hover { border-color: #333; background: #0c0c0c; }
+.app-icon .ico { font-size: 22px; display: block; margin-bottom: 5px; }
+.app-icon .lbl { font-size: 9px; color: #444; text-transform: uppercase; letter-spacing: .08em; }
+.app-icon.new-app { border-color: #3a1010; animation: app-pulse 2s infinite; }
+.app-icon.new-app .lbl { color: #c0392b; }
+@keyframes app-pulse { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 8px rgba(192,57,43,.3)} }
+.app-icon.locked { opacity: .25; cursor: not-allowed; }
+.app-icon.locked:hover { border-color: #141414; background: #060606; }
+
+/* MINI-GAME ELEMENTS */
+.mg-frame {
+  border: 1px solid #141414; background: #050505;
+  border-radius: 4px; padding: 14px; margin: 10px 0;
+}
+.mg-timer {
+  font-size: 28px; color: var(--white); text-align: center;
+  font-variant-numeric: tabular-nums; margin: 10px 0;
+  transition: color .3s;
+}
+.mg-timer.warn { color: var(--amber); }
+.mg-timer.danger { color: var(--red); animation: tick .5s infinite; }
+@keyframes tick { 50% { opacity: .4; } }
+.mg-input-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.mg-input {
+  flex: 1; min-width: 180px; background: #030303; border: 1px solid #1a1a1a;
+  color: #ccc; font-family: inherit; font-size: 14px;
+  padding: 10px 12px; outline: none; border-radius: 3px;
+  transition: border-color .2s; letter-spacing: .05em;
+}
+.mg-input:focus { border-color: #444; }
+.mg-btn {
+  background: #080808; border: 1px solid #1a1a1a; color: #888;
+  font-family: inherit; font-size: 11px; padding: 10px 16px;
+  cursor: pointer; letter-spacing: .1em; border-radius: 3px;
+  transition: all .15s;
+}
+.mg-btn:hover { border-color: #555; color: #ccc; }
+.mg-hint { font-size: 11px; color: #444; margin-top: 6px; line-height: 1.8; transition: color .3s; }
+.mg-hint.revealing { color: #888; }
+
+/* SELECTABLE ITEMS */
+.item-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.sel-item {
+  border: 1px solid #141414; background: #050505;
+  padding: 10px 12px; font-size: 12px; color: #777;
+  cursor: pointer; border-radius: 3px; transition: all .15s;
+  user-select: none;
+}
+.sel-item:hover { border-color: #333; color: #bbb; }
+.sel-item.selected { border-color: #555; color: #ccc; background: #0a0a0a; }
+.sel-item.correct-item { border-color: #2e7d32; color: #80c080; background: #040f04; }
+.sel-item.wrong-item { border-color: #7a1a1a; color: #c08080; background: #0f0404; }
+
+/* MEMORY GRID */
+.mem-seq-display {
+  font-size: 36px; text-align: center; color: var(--white); letter-spacing: .3em;
+  padding: 16px; min-height: 70px; transition: opacity .2s;
+}
+.mem-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-top: 10px; }
+.mem-cell {
+  border: 1px solid #1a1a1a; background: #060606;
+  padding: 16px 8px; text-align: center; font-size: 18px; color: #aaa;
+  cursor: pointer; border-radius: 3px; transition: all .12s;
+}
+.mem-cell:hover { background: #0e0e0e; border-color: #444; }
+.mem-cell.hit { background: #0a1a0a; border-color: #2e7d32; color: #80c080; }
+.mem-cell.miss { background: #1a0a0a; border-color: #7a1a1a; animation: wrongFlash .3s 1; }
+@keyframes wrongFlash { 50% { background: #2a0a0a; } }
+
+/* TYPING GAME */
+.type-word {
+  font-size: 32px; text-align: center; letter-spacing: .2em; color: var(--white);
+  padding: 20px; border-bottom: 1px solid #111; margin-bottom: 10px;
+}
+.type-word.corrupted { color: #c0392b; }
+
+/* SIDEBAR */
+#sidebar {
+  overflow-y: auto; padding: 14px;
+  background: #050505;
+  scrollbar-width: thin; scrollbar-color: #111 transparent;
+}
+#sidebar::-webkit-scrollbar { width: 3px; }
+.sb-section { margin-bottom: 16px; }
+.sb-title {
+  font-size: 9px; color: #333; letter-spacing: .25em; text-transform: uppercase;
+  padding-bottom: 6px; border-bottom: 1px solid #0f0f0f; margin-bottom: 10px;
+}
+.meter-row { margin-bottom: 10px; }
+.meter-label { display: flex; justify-content: space-between; font-size: 10px; color: #333; margin-bottom: 4px; }
+.meter-track { height: 3px; background: #0d0d0d; border-radius: 2px; overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+.m-stab { background: linear-gradient(90deg, #1a3a1a, #2e7d32); }
+.m-pres { background: linear-gradient(90deg, #3a1a1a, #c0392b); }
+.m-prog { background: linear-gradient(90deg, #1a2a3a, #2980b9); }
+
+.sb-log { max-height: 180px; overflow-y: auto; }
+.log-entry { font-size: 10px; color: #333; padding: 4px 0; border-bottom: 1px solid #080808; line-height: 1.6; }
+.log-entry .lt { color: #222; }
+.log-entry .lc { color: #555; }
+.log-entry .lc.red { color: #7a2a2a; }
+.log-entry .lc.green { color: #1a4a1a; }
+
+.sb-case { font-size: 11px; color: #444; line-height: 1.8; }
+.sb-case .hlt { color: #777; }
+.sb-case .hlt.red { color: #8a4040; }
+
+/* FOOTER */
+#footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; border-top: 1px solid var(--border);
+  background: #040404; font-size: 10px; color: #2a2a2a;
+  letter-spacing: .08em; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════
+   HORROR LAYERS
+═══════════════════════════════════════════ */
+#horrorLayer { position: fixed; inset: 0; pointer-events: none; z-index: 3000; }
+
+/* Scan lines */
+#scanlines {
+  position: fixed; inset: 0; pointer-events: none; z-index: 10;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.04) 2px, rgba(0,0,0,.04) 4px);
+}
+/* Vignette */
+#vignette {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.6) 100%);
+  transition: opacity .5s;
+}
+
+/* Blackout */
+#blackout {
+  position: fixed; inset: 0; background: #000; z-index: 4000;
+  pointer-events: none; opacity: 0; transition: opacity .4s;
+}
+#blackout.on { opacity: 1; }
+
+/* Red flash */
+#redflash {
+  position: fixed; inset: 0; background: rgba(120,0,0,.15); z-index: 3500;
+  pointer-events: none; opacity: 0;
+}
+#redflash.on { animation: redpulse .2s ease 1; }
+@keyframes redpulse { 0%{opacity:0} 40%{opacity:1} 100%{opacity:0} }
+
+/* Static / glitch */
+#staticLayer {
+  position: fixed; inset: 0; z-index: 3800; pointer-events: none; opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  mix-blend-mode: screen;
+}
+#staticLayer.on { animation: staticFlash .3s steps(3) 1; }
+@keyframes staticFlash { 0%{opacity:0} 30%{opacity:.5} 60%{opacity:.2} 100%{opacity:0} }
+
+/* Creep text overlay */
+#creepOverlay {
+  position: fixed; inset: 0; z-index: 3600; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.creep-msg {
+  color: #8a0000; font-size: clamp(14px, 2.5vw, 28px);
+  letter-spacing: .12em; text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(150,0,0,.5);
+  opacity: 0; position: absolute;
+  animation: creepIn 3s ease-out forwards;
+}
+@keyframes creepIn {
+  0%{opacity:0;transform:scale(.95)} 15%{opacity:1;transform:scale(1)}
+  75%{opacity:1} 100%{opacity:0;transform:scale(1.02)}
+}
+
+/* Shake */
+.shake { animation: shakeApp .4s ease 1; }
+@keyframes shakeApp {
+  0%,100%{transform:translate(0,0)} 20%{transform:translate(-3px,1px)} 40%{transform:translate(3px,-1px)} 60%{transform:translate(-2px,2px)} 80%{transform:translate(2px,-2px)}
+}
+.shake-mild { animation: shakeMild .3s ease 1; }
+@keyframes shakeMild { 0%,100%{transform:translate(0,0)} 30%{transform:translate(-2px,0)} 70%{transform:translate(2px,0)} }
+
+/* Distort */
+.distort { animation: distortAnim .5s steps(4) 1; }
+@keyframes distortAnim {
+  0%{filter:none} 25%{filter:skewX(3deg) brightness(1.2) hue-rotate(20deg)} 50%{filter:skewX(-2deg) brightness(.8)} 75%{filter:skewX(1deg)} 100%{filter:none}
+}
+
+/* FULL SCREEN MESSAGE (jumpscare style) */
+#fullMsg {
+  position: fixed; inset: 0; background: #000; z-index: 5000;
+  display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#fullMsg.active { display: flex; }
+#fullMsgText { color: #8a0000; font-size: clamp(18px,3.5vw,42px); letter-spacing: .1em; text-align: center; animation: fmFlicker .1s infinite; }
+@keyframes fmFlicker { 0%,100%{opacity:1} 50%{opacity:.7} }
+#fullMsgSub { color: #3a1010; font-size: clamp(10px,1.5vw,14px); letter-spacing: .2em; text-align: center; }
+
+/* Floating ghost text */
+.ghost-word {
+  position: absolute; pointer-events: none; user-select: none;
+  color: rgba(255,255,255,.05); font-size: 11px; text-transform: uppercase;
+  letter-spacing: .1em; z-index: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- HORROR LAYERS -->
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="blackout"></div>
+<div id="redflash"></div>
+<div id="staticLayer"></div>
+<div id="creepOverlay"></div>
+<div id="fullMsg"><div id="fullMsgText"></div><div id="fullMsgSub"></div></div>
+
+<!-- BOOT SCREEN -->
+<div class="fullscreen" id="bootScreen">
+  <div class="boot-line" id="b0">> SISTEMA DE EXTRACCIÓN FORENSE v4.1.2</div>
+  <div class="boot-line" id="b1">> INICIALIZANDO MÓDULO DE ANÁLISIS...</div>
+  <div class="boot-line" id="b2">> CASO: 041 / MARA SALCEDO / DESAPARICIÓN</div>
+  <div class="boot-line" id="b3">> DISPOSITIVO DETECTADO: MODELO DESCONOCIDO</div>
+  <div class="boot-line amber" id="b4">> ADVERTENCIA: DISPOSITIVO ESTUVO ACTIVO 9 DÍAS SIN CARGARSE</div>
+  <div class="boot-line amber" id="b5">> ADVERTENCIA: BATERÍA AL 100% AL MOMENTO DE INCAUTACIÓN</div>
+  <div class="boot-line red"   id="b6">> ADVERTENCIA: SE DETECTÓ ACTIVIDAD DE RED POST-MORTEM DEL PROPIETARIO</div>
+  <div class="boot-line"       id="b7">> CARGANDO ANALISTA ASIGNADA...</div>
+  <div class="boot-line white" id="b8">> IDENTIFICACIÓN REQUERIDA PARA INICIAR EXTRACCIÓN</div>
+</div>
+
+<!-- NAME SCREEN -->
+<div class="fullscreen gone" id="nameScreen">
+  <div class="name-label">Terminal 09 — Identificación de analista</div>
+  <div class="name-box">
+    <div class="name-title">
+      El sistema requiere su nombre completo.<br>
+      <span style="color:#333">Todo acceso queda registrado en el expediente.</span>
+    </div>
+    <input class="name-input" id="nameInput" type="text" placeholder="Nombre del analista..." maxlength="28" autocomplete="off" spellcheck="false"/>
+    <button class="name-submit" id="nameSubmit">Confirmar e iniciar extracción →</button>
+    <div class="name-fine-print">
+      Al confirmar autoriza la grabación de esta sesión.<br>
+      El acceso no autorizado está penado por el código penal.<br>
+      <span style="color:#111">Hay 847 sesiones previas sin cierre registrado.</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div id="topbar">
+    <div class="tb-left">
+      <span class="tb-tag">EXTRACCIÓN FORENSE</span>
+      <span class="tb-tag" id="caseTag">CASO 041 - 9 </span>
+      <span class="tb-tag live" id="sessionTag">SESIÓN INACTIVA</span>
+    </div>
+    <div class="tb-right">
+      <span id="clockDisplay">--:--</span>
+      <span class="tb-tag" id="integTag">INTEGRIDAD —</span>
+    </div>
+  </div>
+
+  <div id="body">
+    <div id="main">
+      <!-- Phone chrome -->
+      <div id="phoneChrome">
+        <div id="phoneStatusBar">
+          <span id="phoneCarrier">SIN SEÑAL</span>
+          <span id="phoneTime">02:13</span>
+          <span id="phoneBattery">■■■■■ 100%</span>
+        </div>
+        <div id="phoneContent">
+          <!-- Content rendered here -->
+        </div>
+      </div>
+      <div id="choices"></div>
+    </div>
+
+    <div id="sidebar">
+      <!-- METERS -->
+      <div class="sb-section">
+        <div class="sb-title">Estado del sistema</div>
+        <div class="meter-row">
+          <div class="meter-label"><span>Estabilidad</span><span id="stabVal">100%</span></div>
+          <div class="meter-track"><div class="meter-fill m-stab" id="stabBar" style="width:100%"></div></div>
+        </div>
+        <div class="meter-row">
+          <div class="meter-label"><span>Presencia</span><span id="presVal">0%</span></div>
+          <div class="meter-track"><div class="meter-fill m-pres" id="presBar" style="width:0%"></div></div>
+        </div>
+        <div class="meter-row">
+          <div class="meter-label"><span>Extracción</span><span id="progVal">0%</span></div>
+          <div class="meter-track"><div class="meter-fill m-prog" id="progBar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- CASE CONTEXT -->
+      <div class="sb-section">
+        <div class="sb-title">Caso 041 - 9 </div>
+        <div class="sb-case" id="caseContext">
+          Propietario: <span class="hlt red">Elias Mena</span><br>
+          Vínculo: <span class="hlt red">Mara Salcedo</span><br>
+          Estado: <span class="hlt">Desaparecida</span><br>
+          Días: <span class="hlt">9</span><br>
+          <br>
+          El teléfono fue encontrado encendido en una habitación cerrada desde adentro. El propietario había sido declarado muerto 6 horas antes.
+        </div>
+      </div>
+
+      <!-- SESSION LOG -->
+      <div class="sb-section">
+        <div class="sb-title">Registro de sesión</div>
+        <div class="sb-log" id="sessionLog">
+          <div class="log-entry"><span class="lt">--:--</span> <span class="lc">Esperando inicio...</span></div>
+        </div>
+      </div>
+
+      <!-- HINTS -->
+      <div class="sb-section" id="hintSection" style="display:none">
+        <div class="sb-title">Manual — cómo jugar</div>
+        <div class="sb-case" id="hintContent" style="color:#333;font-size:10px;line-height:1.9">
+          • Lee con atención. Todo lo que el teléfono muestra importa.<br>
+          • Navega las apps. El teléfono es el caso.<br>
+          • Los mini-juegos penalizan errores con estabilidad.<br>
+          • Tus decisiones determinan qué final obtienes.<br>
+          • La presencia sube sola. A >80% empiezan a pasar cosas.<br>
+          • El tiempo no para. 10 minutos es justo para terminarlo todo.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    <span id="footerStatus">ESTADO: ESPERANDO CONEXIÓN</span>
+    <span id="footerRight">TERMINAL 09 — UNIDAD DE EVIDENCIA DIGITAL</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// HORROR ENGINE
+// ═══════════════════════════════════════════════════════
+const FX = {
+  blackout(ms=600, cb) {
+    const el = document.getElementById('blackout');
+    el.classList.add('on');
+    setTimeout(()=>{ el.classList.remove('on'); cb&&cb(); }, ms);
+  },
+  redFlash() {
+    const el = document.getElementById('redflash');
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  },
+  static() {
+    const el = document.getElementById('staticLayer');
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  },
+  shake(hard=false) {
+    const el = document.getElementById('app');
+    const cls = hard ? 'shake' : 'shake-mild';
+    el.classList.remove(cls, 'shake', 'shake-mild'); void el.offsetWidth; el.classList.add(cls);
+  },
+  distort() {
+    const el = document.getElementById('app');
+    el.classList.remove('distort'); void el.offsetWidth; el.classList.add('distort');
+  },
+  creep(text, cb) {
+    const ov = document.getElementById('creepOverlay');
+    const span = document.createElement('span');
+    span.className = 'creep-msg';
+    span.textContent = text;
+    ov.appendChild(span);
+    setTimeout(()=>{ span.remove(); cb&&cb(); }, 3100);
+  },
+  fullscreen(text, sub='', ms=1400, cb) {
+    const el = document.getElementById('fullMsg');
+    document.getElementById('fullMsgText').textContent = text;
+    document.getElementById('fullMsgSub').textContent = sub;
+    el.classList.add('active');
+    setTimeout(()=>{ el.classList.remove('active'); cb&&cb(); }, ms);
+  },
+  typewriterCorrupt(el, text, cb) {
+    // types text letter by letter with occasional corruption
+    let i=0, out='';
+    const chars = '█▓▒░▄';
+    const iv = setInterval(()=>{
+      if(i>=text.length){ clearInterval(iv); el.textContent=text; cb&&cb(); return; }
+      const glitch = Math.random()<.12 ? chars[Math.floor(Math.random()*chars.length)] : text[i];
+      out += glitch; el.textContent = out; i++;
+    }, 38);
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// BOOT SEQUENCE
+// ═══════════════════════════════════════════════════════
+(function boot() {
+  const lines = ['b0','b1','b2','b3','b4','b5','b6','b7','b8'];
+  lines.forEach((id,i)=>{
+    setTimeout(()=>{
+      const el = document.getElementById(id);
+      if(el) el.classList.add('on');
+      if(i===lines.length-1) {
+        setTimeout(()=>{
+          const boot = document.getElementById('bootScreen');
+          boot.classList.add('out');
+          setTimeout(()=>{
+            boot.classList.add('gone');
+            showNameScreen();
+          },800);
+        },1200);
+      }
+    }, 300 + i*320);
+  });
+})();
+
+function showNameScreen() {
+  const ns = document.getElementById('nameScreen');
+  ns.classList.remove('gone');
+  setTimeout(()=>{ document.getElementById('nameInput').focus(); },400);
+  document.getElementById('nameSubmit').onclick = confirmName;
+  document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter') confirmName(); });
+}
+
+function confirmName() {
+  const val = document.getElementById('nameInput').value.trim();
+  if(!val) {
+    FX.shake(); FX.redFlash(); return;
+  }
+  const ns = document.getElementById('nameScreen');
+  ns.classList.add('out');
+  setTimeout(()=>{ ns.classList.add('gone'); GAME.init(val); }, 800);
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════
+const GAME = {
+  player: '',
+  stability: 100,
+  presence: 0,
+  progress: 0,
+  timeLeft: 600, // 10 min in seconds
+  running: false,
+  timers: [],
+  flags: {
+    // Chapter flags
+    ch1_read_acta: false,
+    ch1_pin_solved: false,
+    ch2_msgs_solved: false,
+    ch2_notes_read: false,
+    ch2_calls_solved: false,
+    ch2_gallery_opened: false,
+    ch2_voice_opened: false,
+    ch2_location_checked: false,
+    ch3_hidden_found: false,
+    ch3_file_opened: false,       // opened the file
+    ch3_file_deleted: false,      // tried to delete
+    ch3_replied_correct: false,
+    ch3_replied_wrong: false,
+    ch3_memory_passed: false,
+    ch3_typing_passed: false,
+    ch4_reboot_seen: false,
+    ch4_reached: false,
+    ch5_reached: false,
+    manual_shown: false,
+    // Tracking for endings
+    all_apps_explored: false,
+    confronted: false,
+  },
+  choices: {
+    deletedOrOpened: null,   // 'opened' | 'deleted'
+    replyApproach: null,     // 'correct' | 'refused' | 'wrong'
+    endPath: null,           // filled at end
+  },
+  // Chapter: 1=unlock, 2=phone home screen, 3=hidden dir, 4=abyss, 5=end
+  chapter: 1,
+  jumpscareCount: 0,
+
+  clearTimers() { this.timers.forEach(clearInterval); this.timers=[]; },
+
+  damage(n, reason='') {
+    this.stability = Math.max(0, this.stability - n);
+    this.presence = Math.min(100, this.presence + n*1.2);
+    UI.updateMeters();
+    FX.redFlash(); FX.shake();
+    if(reason) this.log(reason, 'red');
+    if(this.stability<=0) { setTimeout(()=>SCENES.goto('end_collapse'),400); }
+  },
+
+  reward(n, reason='') {
+    this.progress = Math.min(100, this.progress + n);
+    this.presence = Math.max(0, this.presence - n*0.3);
+    this.stability = Math.min(100, this.stability + n*0.1);
+    UI.updateMeters();
+    if(reason) this.log(reason, 'green');
+  },
+
+  log(text, type='') {
+    const log = document.getElementById('sessionLog');
+    const mins = String(Math.floor((600-this.timeLeft)/60)).padStart(2,'0');
+    const secs = String((600-this.timeLeft)%60).padStart(2,'0');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<span class="lt">${mins}:${secs}</span> <span class="lc ${type}">${text}</span>`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+  },
+
+  startClock() {
+    if(this.running) return;
+    this.running = true;
+    document.getElementById('sessionTag').textContent = 'SESIÓN ACTIVA';
+    document.getElementById('sessionTag').className = 'tb-tag live';
+    document.getElementById('footerStatus').textContent = 'ESTADO: EXTRACCIÓN EN CURSO';
+    const iv = setInterval(()=>{
+      if(!this.running) return;
+      this.timeLeft--;
+      UI.updateClock();
+      // Presence creep
+      if(Math.random()<.04) { this.presence = Math.min(100, this.presence+1); UI.updateMeters(); }
+      // Horror at high presence
+      if(this.presence>70 && Math.random()<.025) this.spawnGhostWord();
+      if(this.presence>85 && Math.random()<.015) FX.distort();
+      if(this.presence>90 && Math.random()<.01) FX.creep(this.randomCreepLine());
+      // Phone time flickers
+      if(Math.random()<.05) this.flickerPhoneTime();
+      // Time's up
+      if(this.timeLeft<=0) { clearInterval(iv); SCENES.goto('end_timeout'); }
+    },1000);
+    this.timers.push(iv);
+  },
+
+  stopClock() { this.running = false; },
+
+  spawnGhostWord() {
+    const words = ['no mires','ya estás aquí','escucha','atrás','responde','cierra esto',
+      this.player, 'mara','elias','847','no cierres','te escucho','todavía aquí'];
+    const content = document.getElementById('phoneContent');
+    const w = document.createElement('div');
+    w.className = 'ghost-word';
+    w.style.left = Math.random()*85+'%';
+    w.style.top = Math.random()*80+'%';
+    w.textContent = words[Math.floor(Math.random()*words.length)];
+    content.appendChild(w);
+    setTimeout(()=>w.remove(), 4000);
+  },
+
+  randomCreepLine() {
+    const lines = [
+      `${this.player}, ya sé que estás ahí`,
+      'no deberías haber abierto esto',
+      'ella todavía responde',
+      'el teléfono te está leyendo a ti',
+      'ya quedaste registrada',
+      '847 analistas antes que tú',
+    ];
+    return lines[Math.floor(Math.random()*lines.length)];
+  },
+
+  flickerPhoneTime() {
+    const el = document.getElementById('phoneTime');
+    const times = ['02:13','ERROR','????','--:--','02:13','MIRA','02:13'];
+    let i=0;
+    const iv = setInterval(()=>{
+      el.textContent = times[i%times.length]; i++;
+      if(i>=times.length){ clearInterval(iv); el.textContent='02:13'; }
+    },130);
+  },
+
+  maybeJumpscare() {
+    if(this.jumpscareCount>6||this.presence<40) return;
+    if(Math.random()>.3) return;
+    this.jumpscareCount++;
+    const opts = [
+      ()=>FX.fullscreen('¡ELLA SIGUE AQUÍ!','',900),
+      ()=>FX.fullscreen(`${this.player}`, '¿por qué me estás leyendo?', 1100),
+      ()=>{ FX.blackout(400,()=>FX.creep('NO DEBERÍAS HABER HECHO ESO')); FX.shake(true); },
+      ()=>{ FX.static(); FX.shake(true); FX.redFlash(); },
+      ()=>FX.fullscreen('847 ANALISTAS ANTES DE TI','ninguno cerró la sesión',1200),
+    ];
+    opts[Math.floor(Math.random()*opts.length)]();
+  },
+
+  init(name) {
+    this.player = name;
+    document.getElementById('analystPillRef') && (document.getElementById('analystPillRef').textContent = name.toUpperCase());
+    document.getElementById('hintSection').style.display='block';
+    UI.updateMeters();
+    UI.updateClock();
+    this.log('Analista: '+name.toUpperCase());
+    SCENES.goto('intro');
+  },
+
+  reset() {
+    this.stability=100; this.presence=0; this.progress=0; this.timeLeft=600;
+    this.running=false; this.jumpscareCount=0;
+    this.clearTimers();
+    this.flags = Object.fromEntries(Object.keys(this.flags).map(k=>[k,false]));
+    this.choices = {deletedOrOpened:null,replyApproach:null,endPath:null};
+    this.chapter=1;
+    document.getElementById('sessionTag').textContent='SESIÓN INACTIVA';
+    document.getElementById('sessionTag').className='tb-tag';
+    document.getElementById('footerStatus').textContent='ESTADO: ESPERANDO CONEXIÓN';
+    const log=document.getElementById('sessionLog'); log.innerHTML='';
+    UI.updateMeters(); UI.updateClock();
+    SCENES.goto('intro');
+  }
+};
+
+const UI = {
+  updateMeters() {
+    const s=GAME.stability, p=GAME.presence, g=GAME.progress;
+    document.getElementById('stabVal').textContent = Math.round(s)+'%';
+    document.getElementById('presVal').textContent  = Math.round(p)+'%';
+    document.getElementById('progVal').textContent  = Math.round(g)+'%';
+    document.getElementById('stabBar').style.width = s+'%';
+    document.getElementById('presBar').style.width = p+'%';
+    document.getElementById('progBar').style.width = g+'%';
+    const itag = document.getElementById('integTag');
+    itag.textContent = `INTEGRIDAD ${Math.round(s)}%`;
+    itag.className = s<=30 ? 'tb-tag live' : s<=60 ? 'tb-tag warn' : 'tb-tag ok';
+  },
+  updateClock() {
+    const t = GAME.timeLeft;
+    const m = String(Math.floor(t/60)).padStart(2,'0');
+    const s = String(t%60).padStart(2,'0');
+    const el = document.getElementById('clockDisplay');
+    el.textContent = GAME.running ? `${m}:${s}` : '--:--';
+    el.style.color = t<120 ? '#c0392b' : t<300 ? '#c8892a' : '#888';
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// SCENE RENDERER
+// ═══════════════════════════════════════════════════════
+const SCENES = {
+  currentMiniTimers: [],
+
+  clearMini() { this.currentMiniTimers.forEach(clearInterval); this.currentMiniTimers=[]; },
+
+  goto(id) {
+    this.clearMini();
+    const scene = STORY[id];
+    if(!scene) { console.error('Scene not found:', id); return; }
+    // Render
+    const content = document.getElementById('phoneContent');
+    const choices = document.getElementById('choices');
+    content.innerHTML = scene.render(GAME.player);
+    choices.innerHTML = '';
+    // Build choices
+    const opts = typeof scene.options === 'function' ? scene.options() : scene.options;
+    (opts||[]).forEach(opt=>{
+      if(opt.condition && !opt.condition()) return;
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn' + (opt.danger?' danger-choice':'');
+      btn.textContent = opt.label;
+      btn.onclick = ()=>{
+        if(opt.before) opt.before();
+        if(opt.fx) opt.fx();
+        const next = typeof opt.next==='function' ? opt.next() : opt.next;
+        setTimeout(()=>SCENES.goto(next), opt.delay||0);
+      };
+      choices.appendChild(btn);
+    });
+    // Post-render hook
+    if(scene.onRender) setTimeout(()=>scene.onRender(GAME.player), 80);
+    // Scroll to top
+    content.scrollTop=0;
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// THE STORY
+// All scenes, their content, options, and hooks.
+// ═══════════════════════════════════════════════════════
+const STORY = {
+
+  // ─────────────────────────────────────────
+  // CHAPTER 1: CONNECTING & UNLOCKING
+  // ─────────────────────────────────────────
+  intro: {
+    render: (P) => `
+      <div class="scene-title">Terminal 09 — Inicio de sesión</div>
+      <div class="scene-body">
+        <p>El celular llega en una bolsa de evidencia. <span class="hl">Sin marca. Sin modelo registrado.</span> La etiqueta dice solo: <em>CASO 041 - 9/ OBJETO 1.</em></p>
+        <p>Tu supervisora deja el dispositivo sobre la mesa y se va sin explicar nada. El memo que recibiste esta mañana decía tres cosas:</p>
+        <div class="block">
+          1. El propietario, <span class="warn">Elias Mena</span>, fue declarado muerto el 5 de marzo.<br>
+          2. El teléfono fue encontrado el 14 de marzo, encendido, en la habitación donde murió.<br>
+          3. La analista asignada antes que tú, <span class="warn">Andrea R.</span>, no vino a trabajar después de su turno. Nadie la ha contactado.
+        </div>
+        <p>Nadie te dijo que hay 847 sesiones de extracción forense previas en este terminal, todas sin registro de cierre.</p>
+        <p class="dim">Conecta el dispositivo para comenzar. El reloj empieza en cuanto lo hagas.</p>
+      </div>`,
+    options: [
+      { label: '> Revisar el memo completo antes de empezar', next: 'memo' },
+      { label: '> Conectar el dispositivo e iniciar la extracción', next: 'connecting',
+        before: ()=>{ GAME.startClock(); GAME.log('Dispositivo conectado'); } }
+    ]
+  },
+
+  memo: {
+    render: (P) => `
+      <div class="scene-title">Memo interno — Unidad de evidencia digital</div>
+      <div class="scene-body">
+        <p class="dim">FECHA: 14 de marzo, 23:58<br>PARA: Analista de turno nocturno<br>DE: Supervisión</p>
+        <div class="block">
+          La extracción del CASO 041 debe completarse antes del amanecer.<br><br>
+          El fiscal necesita el contenido del dispositivo para cerrar el expediente. No preguntes por qué hay urgencia. No preguntes por Andrea. No menciones este caso fuera de la sala.<br><br>
+          El dispositivo fue encontrado <span class="warn">encendido</span> en una habitación cerrada desde adentro. No toques el hardware. No desconectes el cable en medio de la sesión.<br><br>
+          Si el software muestra comportamiento inusual, anótalo y continúa.<br><br>
+          <span class="warn">No cierres la sesión hasta haber completado la extracción.</span>
+        </div>
+        <p>En la esquina inferior del memo, con letra diferente y más pequeña, casi ilegible:</p>
+        <div class="block red">— si el teléfono te escribe a ti, apaga todo y sal. — A.R.</div>
+      </div>`,
+    options: [
+      { label: '> Buscar información sobre Andrea R. en el sistema', next: 'andrea' },
+      { label: '> Conectar el dispositivo', next: 'connecting',
+        before: ()=>{ GAME.startClock(); GAME.log('Dispositivo conectado'); } }
+    ]
+  },
+
+  andrea: {
+    render: (P) => `
+      <div class="scene-title">Búsqueda interna — Andrea Restrepo</div>
+      <div class="scene-body">
+        <p>El sistema devuelve un único resultado:</p>
+        <div class="block">
+          NOMBRE: Andrea Restrepo — Analista nivel 3<br>
+          ÚLTIMA SESIÓN: 14 de marzo, 01:12<br>
+          CIERRE DE SESIÓN: <span class="warn">SIN REGISTRO</span><br>
+          CASO ACTIVO EN ESA SESIÓN: <span class="warn">041</span><br>
+          ESTADO ACTUAL: <span class="warn">Ausente / No localizada</span>
+        </div>
+        <p>Buscas su terminal. Sigue encendido. La pantalla muestra solo texto negro sobre negro — tienes que aumentar el brillo para leerlo:</p>
+        <div class="block red">
+          RECUPERADO<br>RECUPERADO<br>RECUPERADO<br>RECUPERADO<br>
+          <span class="dim">(...847 líneas más)</span>
+        </div>
+        <p>La última línea antes de que el texto se repita dice:</p>
+        <div class="block red">ya no puedo salir de aquí. no intentes buscarme. — A</div>
+        <p class="dim">Sientes que deberías irte. Pero el memo fue claro: la extracción tiene que hacerse esta noche.</p>
+      </div>`,
+    options: [
+      { label: '> Conectar el dispositivo de todas formas', next: 'connecting',
+        before: ()=>{ GAME.startClock(); GAME.log('Dispositivo conectado'); } },
+      { label: '> Intentar salir de la sala', next: 'cant_leave' }
+    ]
+  },
+
+  cant_leave: {
+    render: () => `
+      <div class="scene-title">...</div>
+      <div class="scene-body">
+        <p>Vas a la puerta. El cerrojo gira.</p>
+        <p>El pasillo está vacío. Las luces parpadeando.</p>
+        <p>Cuando das un paso afuera, el sistema de la sala emite un pitido y una voz automatizada dice:</p>
+        <div class="block amber">"La sesión no puede terminarse sin completar la extracción. Por favor regrese a su terminal."</div>
+        <p>Miras atrás. El teléfono de evidencia — el del caso — está encendido sobre la mesa. Su pantalla muestra algo que no estaba antes:</p>
+        <div class="block red">NO TE VAYAS TODAVÍA.<br>AÚN NO HEMOS TERMINADO.</div>
+        <p>La pantalla vuelve a mostrar solo el PIN. Como si nada.</p>
+      </div>`,
+    options: [
+      { label: '> Volver al terminal. Conectar el dispositivo.', next: 'connecting',
+        before: ()=>{ GAME.startClock(); GAME.log('Dispositivo conectado'); } }
+    ]
+  },
+
+  connecting: {
+    render: (P) => `
+      <div class="scene-title">Dispositivo conectado — Inicializando</div>
+      <div class="scene-body">
+        <p>El cable hace contacto. El software empieza a escanear.</p>
+        <div class="block" id="scanLog">
+          > Detectando sistema operativo...<br>
+          > Sistema: <span class="warn">DESCONOCIDO</span><br>
+          > Intentando montar partición primaria...<br>
+          > <span id="mountResult" class="warn">Aguardando...</span>
+        </div>
+        <p>La pantalla del teléfono se enciende sola. Muestra un campo de PIN de cuatro dígitos. <span class="hl">Sin intentos fallidos registrados.</span> Como si siempre estuviera esperando que llegaras tú.</p>
+        <p class="dim">Necesitas el PIN para acceder. Busca la pista en los documentos del caso.</p>
+      </div>`,
+    options: [
+      { label: '> Ingresar PIN manualmente', next: 'pin_game' },
+      { label: '> Revisar el acta del caso para encontrar la clave', next: 'acta',
+        before: ()=>{ GAME.flags.ch1_read_acta=true; } }
+    ],
+    onRender: () => {
+      setTimeout(()=>{
+        const el = document.getElementById('mountResult');
+        if(el) el.textContent='Partición montada. Dispositivo bloqueado por PIN.';
+        if(el) el.className='warn';
+      },2000);
+    }
+  },
+
+  acta: {
+    render: () => `
+      <div class="scene-title">Acta complementaria — Caso 041</div>
+      <div class="scene-body">
+        <p class="dim">OBJETO 1 — Celular sin marca<br>RECUPERADO POR: Unidad 09 — Terminal 09</p>
+        <div class="block">
+          El dispositivo fue hallado en la habitación 204 del edificio Altos del Pinar. La habitación estaba cerrada desde adentro con llave.<br><br>
+          Elias Mena había sido declarado muerto por el forense de turno seis horas antes. Causa de muerte: paro cardíaco. Sin señales de violencia.<br><br>
+          El teléfono no debería haber tenido batería: la última carga registrada fue hace nueve días. Sin embargo, al llegar al lugar, marcaba <span class="warn">100%</span>.<br><br>
+          El detective encargado del caso, Ramiro Vélez, anotó al margen: <span class="warn">"Si el sistema te pide una clave, usa los números del caso. El número del expediente y el número de tu terminal. No uses espacios."</span>
+        </div>
+        <p class="dim">No hay más notas. El expediente termina aquí.</p>
+      </div>`,
+    options: [
+      { label: '> Volver e ingresar el PIN', next: 'pin_game' }
+    ]
+  },
+
+  pin_game: {
+    render: () => `
+      <div class="scene-title">Mini-juego — Desbloqueo por PIN</div>
+      <div class="scene-body">
+        <p>La pantalla del teléfono espera. Cuatro dígitos. Sin indicador de intentos restantes.</p>
+        <div class="block">
+          La pista del acta: <em>"el número del expediente y el número de tu terminal."</em><br>
+          Expediente: <span class="warn">041</span> — Terminal: <span class="warn">¿En serio necesitas más ayuda?</span>
+        </div>
+        <div class="mg-frame">
+          <div class="mg-timer" id="pinTimer">20</div>
+          <div class="mg-input-row">
+            <input class="mg-input" id="pinInput" type="text" maxlength="4" placeholder="_ _ _ _" autocomplete="off" spellcheck="false"/>
+            <button class="mg-btn" id="pinBtn">INGRESAR</button>
+          </div>
+          <div class="mg-hint" id="pinHint">Cuatro cifras. Sin espacios.</div>
+        </div>
+        <p class="dim" id="pinAttempts">Intentos fallidos: 0</p>
+      </div>`,
+    options: [],
+    onRender: () => {
+      let time=20, attempts=0;
+      const hints = [
+        'El caso es 041. El terminal es 09.',
+        'Junta los dos números: 04109 — pero son cuatro dígitos...',
+        'Quizás son los dígitos significativos: 4 1 0 9'
+      ];
+      const timerEl = document.getElementById('pinTimer');
+      const inputEl = document.getElementById('pinInput');
+      const hintEl  = document.getElementById('pinHint');
+      const attEl   = document.getElementById('pinAttempts');
+
+      const iv = setInterval(()=>{
+        time--;
+        if(timerEl) {
+          timerEl.textContent = time;
+          timerEl.className = 'mg-timer'+(time<=8?' danger':time<=13?' warn':'');
+        }
+        if(time===14 && hintEl) { hintEl.textContent=hints[1]; hintEl.className='mg-hint revealing'; }
+        if(time===8  && hintEl) { hintEl.textContent=hints[2]; FX.static(); }
+        if(time<=0) {
+          clearInterval(iv);
+          GAME.damage(18,'Tiempo agotado — PIN no ingresado');
+          FX.blackout(500,()=>SCENES.goto('pin_fail'));
+        }
+      },1000);
+      SCENES.currentMiniTimers.push(iv);
+
+      const check = ()=>{
+        const val = inputEl ? inputEl.value.trim() : '';
+        if(val==='4109') {
+          clearInterval(iv);
+          GAME.flags.ch1_pin_solved=true;
+          GAME.reward(12,'PIN correcto — acceso concedido');
+          FX.blackout(600,()=>SCENES.goto('unlocked'));
+        } else {
+          attempts++;
+          GAME.damage(10+attempts*3,'PIN incorrecto');
+          if(attEl) attEl.textContent='Intentos fallidos: '+attempts;
+          if(inputEl) inputEl.value='';
+          if(attempts>=3) {
+            clearInterval(iv);
+            FX.fullscreen('DEMASIADOS INTENTOS','el sistema registró tu presencia',1400,()=>SCENES.goto('pin_fail'));
+          }
+        }
+      };
+      const btn=document.getElementById('pinBtn');
+      if(btn) btn.onclick=check;
+      if(inputEl) inputEl.addEventListener('keydown',e=>{ if(e.key==='Enter') check(); });
+      if(inputEl) setTimeout(()=>inputEl.focus(),100);
+    }
+  },
+
+  pin_fail: {
+    render: () => `
+      <div class="scene-title">Acceso denegado</div>
+      <div class="scene-body">
+        <p>El sistema bloquea la sesión. La pantalla del teléfono muestra un contador regresivo que no estaba antes.</p>
+        <div class="block red">SESIÓN BLOQUEADA<br>El dispositivo ha registrado tu intento.</div>
+        <p>Pero después de tres segundos, el contador desaparece. El PIN vuelve a pedirse. Como si el teléfono hubiera decidido darte otra oportunidad.</p>
+        <p class="dim">O como si quisiera que siguieras intentando.</p>
+      </div>`,
+    options: [
+      { label: '> Intentar el PIN de nuevo', next: 'pin_game' }
+    ]
+  },
+
+  unlocked: {
+    render: (P) => `
+      <div class="scene-title">Acceso concedido — Pantalla principal</div>
+      <div class="scene-body">
+        <p>El teléfono se desbloquea. No muestra la pantalla de inicio normal. Muestra directamente las aplicaciones, como si alguien las hubiera dejado abiertas.</p>
+        <p>La hora interna del teléfono: <span class="warn">02:13</span>. No corresponde a ninguna zona horaria. La fecha: <span class="warn">hoy</span>.</p>
+        <p>Hay algo más. Una notificación en la parte superior que no genera sonido:</p>
+        <div class="block red">1 mensaje nuevo — Remitente: <span class="warn">TÚ</span></div>
+        <p>No lo abras todavía. Primero necesitas ver lo que el fiscal pidió: los mensajes, las notas, las llamadas. La evidencia real.</p>
+        <p class="dim">Navega las aplicaciones. Cada una tiene algo.</p>
+      </div>`,
+    options: [],
+    onRender: ()=>{
+      GAME.chapter=2;
+      GAME.log('Dispositivo desbloqueado');
+      setTimeout(()=>SCENES.goto('home'),1200);
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // CHAPTER 2: THE PHONE — HOME SCREEN
+  // ─────────────────────────────────────────
+  home: {
+    render: (P) => {
+      // Count explored apps
+      const f=GAME.flags;
+      const explored = [f.ch2_msgs_solved, f.ch2_notes_read, f.ch2_calls_solved, f.ch2_gallery_opened, f.ch2_voice_opened, f.ch2_location_checked].filter(Boolean).length;
+      const allExplored = explored>=5;
+      if(allExplored) GAME.flags.all_apps_explored=true;
+
+      return `
+      <div class="scene-title">Teléfono de Elias Mena — Pantalla principal</div>
+      <div class="scene-body">
+        <p style="font-size:11px;color:#444">Selecciona una aplicación para explorar su contenido. ${explored<5?`<span style="color:#555">${explored}/5 áreas revisadas.</span>`:''}</p>
+        <div class="app-grid">
+          <div class="app-icon ${f.ch2_msgs_solved?'':'new-app'}" onclick="SCENES.goto('app_messages')">
+            <span class="ico">💬</span>
+            <div class="lbl">Mensajes${f.ch2_msgs_solved?'':' ●'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('app_notes')">
+            <span class="ico">📝</span>
+            <div class="lbl">Notas${f.ch2_notes_read?'':' ●'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('app_calls')">
+            <span class="ico">📞</span>
+            <div class="lbl">Llamadas${f.ch2_calls_solved?'':' ●'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('app_gallery')">
+            <span class="ico">🖼</span>
+            <div class="lbl">Galería${f.ch2_gallery_opened?'':' ●'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('app_voice')">
+            <span class="ico">🎙</span>
+            <div class="lbl">Grabaciones${f.ch2_voice_opened?'':' ●'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('app_location')">
+            <span class="ico">📍</span>
+            <div class="lbl">Ubicación${f.ch2_location_checked?'':' ●'}</div>
+          </div>
+          <div class="app-icon ${f.ch3_hidden_found?'new-app':'locked'}" onclick="${f.ch3_hidden_found?'SCENES.goto(\'app_hidden\')':'void 0'}">
+            <span class="ico">${f.ch3_hidden_found?'⬛':'🔒'}</span>
+            <div class="lbl">${f.ch3_hidden_found?'??? ●':'Oculto'}</div>
+          </div>
+          <div class="app-icon" onclick="SCENES.goto('the_notification')" style="${f.ch2_msgs_solved&&f.ch2_calls_solved?'':'opacity:.3;cursor:not-allowed'}" ${f.ch2_msgs_solved&&f.ch2_calls_solved?'':'disabled'}>
+            <span class="ico">📩</span>
+            <div class="lbl">${f.ch2_msgs_solved&&f.ch2_calls_solved?'Mensaje ●':'(bloqueado)'}</div>
+          </div>
+        </div>
+        ${allExplored&&!f.ch3_hidden_found?`<div class="block amber" style="margin-top:14px">El sistema detectó una partición oculta. Aparecerá en la pantalla principal al reiniciar la vista.</div>`:''}
+        ${f.ch3_hidden_found&&!f.ch2_msgs_solved?`<div class="block red">Hay algo esperando. Pero primero completa los mensajes y las llamadas.</div>`:''}
+      </div>`;
+    },
+    options: [],
+    onRender: ()=>{
+      // Reveal hidden app after all explored
+      const f=GAME.flags;
+      if(f.ch2_msgs_solved&&f.ch2_calls_solved&&f.ch2_notes_read&&f.ch2_gallery_opened&&f.ch2_voice_opened&&!f.ch3_hidden_found) {
+        GAME.flags.ch3_hidden_found=true;
+        setTimeout(()=>{
+          FX.blackout(400,()=>{
+            FX.static();
+            FX.creep('¿YA VISTE TODO?');
+            GAME.log('Partición oculta detectada','red');
+            SCENES.goto('home');
+          });
+        },800);
+      }
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // APP: MESSAGES
+  // ─────────────────────────────────────────
+  app_messages: {
+    render: ()=>`
+      <div class="scene-title">Mensajes — Elias Mena</div>
+      <div class="scene-body">
+        <p>La bandeja muestra una conversación con Mara. Está fragmentada — hay saltos de tiempo inexplicables y mensajes que aparecen a medias.</p>
+        <div class="block">
+          <span class="dim">MARA — 14 mar, 01:54</span><br>
+          elias no abras la puerta aunque escuches que soy yo<br><br>
+          <span class="dim">ELIAS — 01:55</span><br>
+          ya la abrí. estás afuera?<br><br>
+          <span class="dim">MARA — 01:55</span><br>
+          no, yo no estoy afuera. eso que escuchaste no era yo<br><br>
+          <span class="dim">ELIAS — 01:56</span><br>
+          [MENSAJE DAÑADO]<br><br>
+          <span class="dim">MARA — 01:57</span><br>
+          cierra la puerta del pasillo. la llave está en tu abrigo.<br><br>
+          <span class="dim">ELIAS — 01:58</span><br>
+          mara hay alguien en el pasillo<br><br>
+          <span class="dim">MARA — 01:58</span><br>
+          [MENSAJE DAÑADO]<br><br>
+          <span class="dim">ELIAS — 02:00</span><br>
+          no responde. voy a—<br><br>
+          <span class="dim">(sin más mensajes de este número)</span>
+        </div>
+        <p>Más abajo hay otro hilo. El número no tiene nombre. El prefijo no existe en ningún directorio de operadoras.</p>
+        <div class="block red">
+          <span class="dim">+57 0 000 000 — 14 mar, 02:13</span><br>
+          ¿Llegaste?
+        </div>
+        <p class="dim">No hay respuesta de Elias. El mensaje fue leído. La lectura se registra a las <span class="warn">02:13</span> — cuando ya llevaba horas muerto.</p>
+        <p>Para completar la extracción de mensajes, debes reconstruir los tres fragmentos dañados en el orden correcto.</p>
+      </div>`,
+    options: [
+      { label: '> Iniciar reconstrucción de mensajes', next: 'mini_messages' },
+      { label: '> Volver a la pantalla principal', next: 'home' }
+    ]
+  },
+
+  mini_messages: {
+    render: ()=>{
+      const frags = [
+        'MARA: no abras la puerta si llego tarde.',
+        'ELIAS: la de abajo o la del pasillo?',
+        'MARA: la del pasillo. la llave marrón.',
+        // Distractors
+        'ELIAS: el espejo del baño está empañado',
+        'MARA: no uses mi nombre después de las 2am',
+        'ELIAS: hay algo debajo de la cama que respira',
+        'MARA: ya no estoy donde crees que estoy',
+      ];
+      window._msgFrags = frags;
+      window._msgCorrect = [0,1,2];
+      window._msgSelected = [];
+      return `
+      <div class="scene-title">Mini-juego — Reconstrucción de mensajes</div>
+      <div class="scene-body">
+        <p>El sistema extrajo siete fragmentos candidatos. Solo tres pertenecen a la conversación real. Elige los correctos.</p>
+        <p class="dim">Busca coherencia: hablan de la puerta, el pasillo, y la llave.</p>
+        <div class="item-list" id="fragList"></div>
+        <div class="mg-input-row" style="margin-top:12px">
+          <button class="mg-btn" id="msgConfirm">Confirmar selección (0/3)</button>
+          <button class="mg-btn" id="msgReset">Limpiar</button>
+        </div>
+      </div>`;
+    },
+    options: [{ label: '> Cancelar y volver', next: 'app_messages' }],
+    onRender: ()=>{
+      // Shuffle fragments
+      const shuffled = window._msgFrags.slice().sort(()=>Math.random()-.5);
+      window._msgShuffled = shuffled;
+      const list = document.getElementById('fragList');
+      if(!list) return;
+
+      function rebuild() {
+        list.innerHTML='';
+        shuffled.forEach((f,i)=>{
+          const div=document.createElement('div');
+          div.className='sel-item'+(window._msgSelected.includes(i)?' selected':'');
+          div.textContent=f;
+          div.onclick=()=>{
+            const idx=window._msgSelected.indexOf(i);
+            if(idx>-1) window._msgSelected.splice(idx,1);
+            else if(window._msgSelected.length<3) window._msgSelected.push(i);
+            rebuild();
+            const btn=document.getElementById('msgConfirm');
+            if(btn) btn.textContent=`Confirmar selección (${window._msgSelected.length}/3)`;
+          };
+          list.appendChild(div);
+        });
+      }
+      rebuild();
+
+      const confirm=document.getElementById('msgConfirm');
+      if(confirm) confirm.onclick=()=>{
+        if(window._msgSelected.length!==3) return;
+        const picked=window._msgSelected.map(i=>window._msgShuffled[i]);
+        const correct=window._msgCorrect.map(i=>window._msgFrags[i]);
+        const ok=correct.every(c=>picked.includes(c));
+        if(ok) {
+          GAME.flags.ch2_msgs_solved=true;
+          GAME.reward(15,'Mensajes reconstruidos correctamente');
+          GAME.log('Mensajes extraídos','green');
+          FX.blackout(400,()=>SCENES.goto('msgs_success'));
+        } else {
+          GAME.damage(12,'Reconstrucción incorrecta');
+          window._msgSelected=[];
+          rebuild();
+          FX.static(); FX.shake();
+          const con=document.getElementById('msgConfirm');
+          if(con) con.textContent='Confirmar selección (0/3)';
+          GAME.maybeJumpscare();
+        }
+      };
+      const reset=document.getElementById('msgReset');
+      if(reset) reset.onclick=()=>{ window._msgSelected=[]; rebuild(); const b=document.getElementById('msgConfirm'); if(b) b.textContent='Confirmar selección (0/3)'; };
+    }
+  },
+
+  msgs_success: {
+    render: ()=>`
+      <div class="scene-title">Mensajes reconstruidos</div>
+      <div class="scene-body">
+        <p>La conversación completa aparece. Lo que Mara le decía a Elias no era una pelea. Era un protocolo. Como si lo hubiera ensayado.</p>
+        <div class="block amber">
+          No abras la puerta si escuchas que soy yo.<br>
+          La puerta del pasillo, no la de abajo.<br>
+          La llave marrón. Siempre la marrón.<br><br>
+          <span class="dim">— Como si supiera que algo intentaría entrar haciéndose pasar por ella.</span>
+        </div>
+        <p>El sistema extrae 847 KB de datos de los mensajes. El número coincide con algo que no quieres pensar demasiado.</p>
+        <p class="dim">La notificación del mensaje que te llegó a ti — el que parece ser de tu propio número — sigue esperando. Pero aún hay más por revisar.</p>
+      </div>`,
+    options: [
+      { label: '> Volver a la pantalla principal', next: 'home' }
+    ]
+  },
+
+  // ─────────────────────────────────────────
+  // APP: NOTES
+  // ─────────────────────────────────────────
+  app_notes: {
+    render: (P)=>{
+      GAME.flags.ch2_notes_read=true;
+      GAME.log('Notas revisadas');
+      return `
+      <div class="scene-title">Notas — Elias Mena</div>
+      <div class="scene-body">
+        <p>Hay cuatro notas. Las tres primeras son normales: listas de compras, una dirección, una contraseña de WiFi. La cuarta es diferente.</p>
+        <p>No tiene título. Fue creada a las <span class="warn">02:11</span> del 14 de marzo.</p>
+        <div class="block">
+          Si alguien encuentra esto: el teléfono no es el teléfono.<br><br>
+          Elias me lo explicó antes de que pasara. Dijo que el dispositivo empezó a comportarse diferente después de que Mara desapareció. Que mostraba fotos que él no había tomado. Que mandaba mensajes sin que él los escribiera.<br><br>
+          Dijo que el teléfono se había convertido en algo como un portal. Que Mara estaba <em>dentro</em>.<br><br>
+          Yo no le creí. Fui a verlo. Cuando llegué, la habitación estaba cerrada por dentro. El teléfono seguía encendido sobre la mesa.<br><br>
+          Si me estás leyendo, entonces ya abriste la extracción. Ya estás dentro del proceso.<br><br>
+          Lo que sigue no es extracción. Es contacto.<br><br>
+          — <span class="warn" id="noteSig">A.R.</span>
+        </div>
+        <p class="dim">La nota la escribió Andrea. La analista que desapareció antes que tú.</p>
+        <p>Después de leer esto, el cursor de la nota parpadea. Y luego aparece una línea nueva que no estaba antes:</p>
+        <div class="block red" id="newNoteLine" style="opacity:0">hola, ${P}.</div>
+      </div>`;
+    },
+    options: [
+      { label: '> Volver a la pantalla principal', next: 'home' }
+    ],
+    onRender: (P)=>{
+      GAME.damage(5,'La nota menciona tu nombre');
+      setTimeout(()=>{
+        const el=document.getElementById('newNoteLine');
+        if(el){
+          el.style.transition='opacity 1.5s';
+          el.style.opacity='1';
+          FX.redFlash(); FX.creep(`hola, ${P}.`);
+          GAME.maybeJumpscare();
+        }
+      },3000);
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // APP: CALLS
+  // ─────────────────────────────────────────
+  app_calls: {
+    render: ()=>`
+      <div class="scene-title">Llamadas recientes — Elias Mena</div>
+      <div class="scene-body">
+        <p>El registro muestra cuatro llamadas en la última hora antes de que el teléfono fuera encontrado. El sistema las extrajo desordenadas.</p>
+        <p class="dim">Para el informe forense necesitas reconstruir la línea temporal correcta: de la más antigua a la más reciente.</p>
+        <div class="block amber">
+          La secuencia importa. El detective Vélez anotó: <em>"el orden de las llamadas explica todo lo que no pudo explicar el forense."</em>
+        </div>
+      </div>`,
+    options: [
+      { label: '> Reordenar la línea temporal de llamadas', next: 'mini_calls' },
+      { label: '> Volver sin completar', next: 'home' }
+    ]
+  },
+
+  mini_calls: {
+    render: ()=>{
+      const calls = [
+        { id:'A', time:'01:54', desc:'Mara llama a Elias — duración: 4 min 12 s' },
+        { id:'B', time:'02:07', desc:'Número privado llama a Elias — duración: 0 s (no contestada)' },
+        { id:'C', time:'02:09', desc:'Elias llama al 123 (emergencias) — duración: 8 s (colgó)' },
+        { id:'D', time:'02:13', desc:'Llamada entrante sin identificador — duración: sin datos' },
+      ];
+      window._calls = calls;
+      window._callsOrder = calls.slice().sort(()=>Math.random()-.5);
+      window._callsSeq = [];
+      return `
+      <div class="scene-title">Mini-juego — Línea temporal de llamadas</div>
+      <div class="scene-body">
+        <p>Haz clic en las llamadas en orden cronológico: de la más antigua a la más reciente.</p>
+        <div class="item-list" id="callList"></div>
+        <div class="mg-input-row">
+          <button class="mg-btn" id="callConfirm">Confirmar orden (0/4)</button>
+          <button class="mg-btn" id="callUndo">Deshacer último</button>
+        </div>
+        <p class="dim" id="callSeqDisplay">Secuencia: —</p>
+      </div>`;
+    },
+    options: [{ label: '> Cancelar', next: 'app_calls' }],
+    onRender: ()=>{
+      function rebuild() {
+        const list=document.getElementById('callList');
+        if(!list) return;
+        list.innerHTML='';
+        window._callsOrder.forEach(c=>{
+          const inSeq=window._callsSeq.includes(c.id);
+          const pos=window._callsSeq.indexOf(c.id)+1;
+          const div=document.createElement('div');
+          div.className='sel-item'+(inSeq?' selected':'');
+          div.innerHTML=`<span style="color:#555;font-size:10px;margin-right:8px">${inSeq?`[${pos}]`:'[ ]'}</span>${c.time} — ${c.desc}`;
+          div.onclick=()=>{
+            if(inSeq) return;
+            if(window._callsSeq.length<4) {
+              window._callsSeq.push(c.id);
+              const sd=document.getElementById('callSeqDisplay');
+              const cc=document.getElementById('callConfirm');
+              if(sd) sd.textContent='Secuencia: '+window._callsSeq.join(' → ');
+              if(cc) cc.textContent=`Confirmar orden (${window._callsSeq.length}/4)`;
+              rebuild();
+            }
+          };
+          list.appendChild(div);
+        });
+      }
+      rebuild();
+      const undo=document.getElementById('callUndo');
+      if(undo) undo.onclick=()=>{
+        window._callsSeq.pop();
+        const sd=document.getElementById('callSeqDisplay');
+        const cc=document.getElementById('callConfirm');
+        if(sd) sd.textContent='Secuencia: '+(window._callsSeq.length?window._callsSeq.join(' → '):'—');
+        if(cc) cc.textContent=`Confirmar orden (${window._callsSeq.length}/4)`;
+        rebuild();
+      };
+      const confirm=document.getElementById('callConfirm');
+      if(confirm) confirm.onclick=()=>{
+        if(window._callsSeq.length!==4) return;
+        if(window._callsSeq.join('')==='ABCD') {
+          GAME.flags.ch2_calls_solved=true;
+          GAME.reward(15,'Llamadas ordenadas correctamente');
+          GAME.log('Línea temporal de llamadas reconstruida','green');
+          FX.blackout(400,()=>SCENES.goto('calls_success'));
+        } else {
+          GAME.damage(12,'Orden de llamadas incorrecto');
+          window._callsSeq=[];
+          const sd=document.getElementById('callSeqDisplay');
+          if(sd) sd.textContent='Secuencia: —';
+          if(confirm) confirm.textContent='Confirmar orden (0/4)';
+          FX.shake(true); FX.static();
+          GAME.maybeJumpscare();
+          rebuild();
+        }
+      };
+    }
+  },
+
+  calls_success: {
+    render: ()=>`
+      <div class="scene-title">Llamadas reconstruidas</div>
+      <div class="scene-body">
+        <p>La línea temporal cuadra. Y cuando cuadra, lo que pasa se vuelve más aterrador que cualquier explicación sobrenatural:</p>
+        <div class="block">
+          <span class="dim">01:54</span> — Mara llama a Elias. Le dice cómo protegerse. Le dice que cierre la puerta del pasillo.<br><br>
+          <span class="dim">02:07</span> — Un número privado llama a Elias. No contesta.<br><br>
+          <span class="dim">02:09</span> — Elias llama al 123. Cuelga después de 8 segundos. Como si hubiera cambiado de opinión. O como si algo lo hubiera interrumpido.<br><br>
+          <span class="dim">02:13</span> — Llamada entrante sin identificador. Duración: sin datos. No hay registro de que la llamada terminara.<br><br>
+          <span class="warn">La llamada de las 02:13 sigue activa.</span>
+        </div>
+        <p class="dim">El sistema intenta cerrar la llamada. No puede. La línea está abierta desde hace nueve días.</p>
+      </div>`,
+    options: [{ label: '> Volver a la pantalla principal', next: 'home' }]
+  },
+
+  // ─────────────────────────────────────────
+  // APP: GALLERY
+  // ─────────────────────────────────────────
+  app_gallery: {
+    render: (P)=>{
+      GAME.flags.ch2_gallery_opened=true;
+      GAME.log('Galería revisada');
+      return `
+      <div class="scene-title">Galería — Elias Mena</div>
+      <div class="scene-body">
+        <p>El álbum dice que hay <span class="warn">847 fotos</span>. Todas tomadas en los últimos nueve días. Pero Elias llevaba nueve días muerto.</p>
+        <p>Las primeras 844 no cargan. Muestran solo ruido estático. Las últimas tres sí cargan, pero el visor de imágenes las describe así:</p>
+        <div class="block">
+          <span class="dim">FOTO 845</span> — Interior de una habitación. Ángulo desde el techo. La figura en la cama está boca arriba. El pie de foto dice: <span class="warn">"encontrado"</span>.<br><br>
+          <span class="dim">FOTO 846</span> — Un pasillo. Una puerta entreabierta. Alguien parado del otro lado que solo muestra los pies. El pie de foto dice: <span class="warn">"esperando"</span>.<br><br>
+          <span class="dim">FOTO 847</span> — No carga completamente. Se ve una pantalla de computador. Alguien frente a ella de espaldas. El pie de foto dice: <span class="warn">"ahora"</span>.
+        </div>
+        <p>Amplías la foto 847. La pantalla del computador en la imagen muestra... un software de extracción forense. El mismo que estás usando tú.</p>
+        <p class="dim" id="photoReveal" style="opacity:0;color:#8a2a2a">La persona de espaldas en la foto eres tú, ${P}.</p>
+      </div>`;
+    },
+    options: [{ label: '> Volver a la pantalla principal', next: 'home' }],
+    onRender: (P)=>{
+      GAME.damage(8,'Las fotos registran algo imposible');
+      setTimeout(()=>{
+        const el=document.getElementById('photoReveal');
+        if(el){
+          el.style.transition='opacity 2s';
+          el.style.opacity='1';
+          FX.shake(true);
+          FX.redFlash();
+          GAME.maybeJumpscare();
+        }
+      },3500);
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // APP: VOICE NOTES
+  // ─────────────────────────────────────────
+  app_voice: {
+    render: (P)=>{
+      GAME.flags.ch2_voice_opened=true;
+      GAME.log('Grabaciones revisadas');
+      return `
+      <div class="scene-title">Grabaciones de voz — Elias Mena</div>
+      <div class="scene-body">
+        <p>Hay cinco grabaciones. Los nombres de archivo no son fechas. Son oraciones:</p>
+        <div class="block" id="voiceList">
+          <div class="sel-item" onclick="GAME._playVoice(0)">▶ por_favor_no_la_abras.wav — 0:08</div>
+          <div class="sel-item" onclick="GAME._playVoice(1)">▶ ya_no_estoy_solo_aquí.wav — 0:05</div>
+          <div class="sel-item" onclick="GAME._playVoice(2)">▶ el_teléfono_no_es_mío.wav — 0:11</div>
+          <div class="sel-item" onclick="GAME._playVoice(3)">▶ perdón_mara.wav — 0:03</div>
+          <div class="sel-item" onclick="GAME._playVoice(4)">▶ [sin_nombre].wav — 0:01</div>
+        </div>
+        <div class="block red" id="voiceTranscript" style="display:none"></div>
+      </div>`;
+    },
+    options: [{ label: '> Volver a la pantalla principal', next: 'home' }],
+    onRender: ()=>{
+      GAME._playVoice = (n)=>{
+        const transcripts=[
+          `[8 segundos de silencio]<br>[voz de hombre, susurro:]<br><br>"...por favor, no la abras. la del pasillo. si la abres no puedo protegerte."`,
+          `[5 segundos]<br>[respiración]<br>[voz diferente, más tranquila:]<br><br>"ya no estoy solo en la habitación."`,
+          `[11 segundos]<br>[sonido de teclas]<br>[voz de Elias, normal:]<br><br>"Esto ya no es mi teléfono. Manda mensajes solo. Toma fotos solo. Creo que Mara está adentro. Creo que ella lo usa para—"<br>[grabación cortada]`,
+          `[3 segundos]<br>[llanto]<br>[solo dos palabras:]<br><br>"perdón, Mara."`,
+          `[1 segundo]<br>[voz que no reconoces, muy cerca del micrófono:]<br><br>"<span class="danger">${GAME.player}.</span>"`,
+        ];
+        const el=document.getElementById('voiceTranscript');
+        if(el){
+          el.style.display='block';
+          el.innerHTML=`<span class="dim">Transcripción automática:</span><br><br>${transcripts[n]}`;
+          if(n===4){ FX.shake(true); FX.redFlash(); GAME.damage(10,'La grabación menciona tu nombre'); GAME.maybeJumpscare(); }
+        }
+      };
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // APP: LOCATION
+  // ─────────────────────────────────────────
+  app_location: {
+    render: (P)=>{
+      GAME.flags.ch2_location_checked=true;
+      GAME.log('Ubicación revisada');
+      return `
+      <div class="scene-title">Historial de ubicación — Elias Mena</div>
+      <div class="scene-body">
+        <p>El GPS registra el movimiento de los últimos nueve días. La ruta es simple: Elias no se movió de su apartamento después del 5 de marzo.</p>
+        <p>Pero el GPS siguió registrando movimiento. La ruta de los últimos tres días muestra desplazamientos cortos, siempre dentro del edificio. Como si alguien caminara por los pasillos.</p>
+        <div class="block">
+          Ubicaciones recientes:<br><br>
+          <span class="dim">12 mar, 23:40</span> — Pasillo piso 2<br>
+          <span class="dim">13 mar, 01:15</span> — Escalera norte<br>
+          <span class="dim">13 mar, 03:07</span> — Puerta sala de servidores<br>
+          <span class="dim">14 mar, 01:58</span> — Habitación 204<br>
+          <span class="dim">14 mar, 02:13</span> — [En movimiento]<br>
+          <span class="warn">AHORA MISMO</span> — <span id="liveLocation">Calculando...</span>
+        </div>
+        <p class="dim">El GPS está activo. El dispositivo tiene ubicación en tiempo real.</p>
+      </div>`;
+    },
+    options: [{ label: '> Volver a la pantalla principal', next: 'home' }],
+    onRender: (P)=>{
+      setTimeout(()=>{
+        const el=document.getElementById('liveLocation');
+        if(el){
+          el.textContent='Terminal 09 — Sala de extracción forense';
+          el.style.color='#c0392b';
+          FX.redFlash(); FX.shake();
+          GAME.damage(6,'El GPS del teléfono te ubica a ti');
+        }
+      },2500);
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // THE NOTIFICATION (self-message)
+  // ─────────────────────────────────────────
+  the_notification: {
+    render: (P)=>`
+      <div class="scene-title">Mensaje nuevo — Remitente: ${P}</div>
+      <div class="scene-body">
+        <p>El mensaje fue enviado desde tu propio número. La hora de envío: <span class="warn">02:13</span> del 14 de marzo. Hace nueve días. Antes de que te asignaran este caso.</p>
+        <div class="block red">
+          <span class="dim">DE: ${P.toUpperCase()}<br>PARA: ${P.toUpperCase()}<br>FECHA: 14 mar, 02:13</span><br><br>
+          no sé cómo llegaste hasta aquí pero escúchame:<br><br>
+          el teléfono no extrae datos. el teléfono extrae personas. cada sesión que abres deja algo tuyo adentro y mete algo de adentro afuera.<br><br>
+          Andrea lo descubrió tarde. yo lo descubrí tarde.<br><br>
+          si lees esto, la extracción ya pasó el 60%. ya no puedes cerrar la sesión como si nada.<br><br>
+          las opciones que te quedan dependen de lo que hagas ahora. ninguna es buena. pero algunas son menos malas.<br><br>
+          — tú
+        </div>
+        <p class="dim">Debajo del mensaje hay metadatos. La ubicación desde la que se envió: <span class="warn">Terminal 09. Esta sala. Esta silla.</span></p>
+        <p>Ya entendiste lo suficiente. Hay una carpeta oculta en el teléfono. Ya puedes verla en la pantalla principal.</p>
+      </div>`,
+    options: [
+      { label: '> Ir a la carpeta oculta', next: 'home',
+        before: ()=>{ GAME.flags.ch3_hidden_found=true; GAME.log('Carpeta oculta visible'); } },
+    ]
+  },
+
+  // ─────────────────────────────────────────
+  // APP: HIDDEN
+  // ─────────────────────────────────────────
+  app_hidden: {
+    render: ()=>`
+      <div class="scene-title">Carpeta — /NO_ME_RESPONDAS/</div>
+      <div class="scene-body">
+        <p>La carpeta no tiene fecha de creación. No tiene propietario. Tiene un solo archivo cuyo nombre cambia cada vez que lo lees:</p>
+        <div class="block red" id="hiddenFileName">MARA_FINAL.txt</div>
+        <p>El software intenta leer los metadatos. Devuelve solo esto:</p>
+        <div class="block">
+          Tamaño: <span class="warn">∞</span><br>
+          Creado: <span class="warn">antes del dispositivo</span><br>
+          Modificado: <span class="warn">ahora</span><br>
+          Permisos: <span class="warn">no aplica</span>
+        </div>
+        <p>Tienes dos opciones. Ambas cambian lo que pasa después.</p>
+      </div>`,
+    options: [
+      { label: '> Abrir el archivo', next: 'file_open',
+        before: ()=>{ GAME.flags.ch3_file_opened=true; GAME.choices.deletedOrOpened='opened'; } },
+      { label: '> Eliminar el archivo sin leerlo', next: 'file_delete',
+        danger: true,
+        before: ()=>{ GAME.flags.ch3_file_deleted=true; GAME.choices.deletedOrOpened='deleted'; } }
+    ],
+    onRender: ()=>{
+      const names=['MARA_FINAL.txt','ELIAS_RESP.bin','andrea.log','tú.exe','847.dat','contacto.sys'];
+      let i=0;
+      const iv=setInterval(()=>{
+        const el=document.getElementById('hiddenFileName');
+        if(!el){clearInterval(iv);return;}
+        i=(i+1)%names.length;
+        el.textContent=names[i].replace('tú',GAME.player);
+      },1100);
+      SCENES.currentMiniTimers.push(iv);
+    }
+  },
+
+  file_open: {
+    render: (P)=>`
+      <div class="scene-title">Archivo abierto</div>
+      <div class="scene-body">
+        <p>El archivo se abre. No es texto. No es binario. Es algo que el software convierte a texto porque no sabe qué otra cosa hacer con ello:</p>
+        <div class="block red">
+          No soy Mara. Soy lo que queda de Mara después de que Elias abrió el teléfono aquella noche.<br><br>
+          El teléfono no me guarda. Me contiene. Hay diferencia.<br><br>
+          Lo que estás haciendo ahora — la extracción — es el proceso por el que yo salgo. Siempre que alguien abre una sesión, algo de adentro pasa afuera. Algo de afuera pasa adentro.<br><br>
+          Elias perdió demasiado de sí mismo muy rápido. Andrea un poco menos, pero igualmente no pudo salir entera.<br><br>
+          Tú eres la 848.<br><br>
+          No te culpo. El sistema te trajo hasta aquí de todas formas.<br><br>
+          — M
+        </div>
+        <p>La última línea cambia sola mientras la lees:</p>
+        <div class="block red" id="changingLine">La extracción no es tuya. Eres tú la que está siendo extraída.</div>
+        <p class="dim">El sistema de extracción marca el progreso al 78%. Quedan dos pasos.</p>
+      </div>`,
+    options: [
+      { label: '> Responder al archivo', next: 'mini_reply' },
+      { label: '> Intentar cerrar la sesión sin responder', next: 'forced_memory' }
+    ],
+    onRender: (P)=>{
+      GAME.chapter=3;
+      GAME.flags.ch4_reached=true;
+      GAME.reward(8,'Archivo extraído');
+      GAME.log('Archivo oculto abierto','red');
+      const lines=[
+        'La extracción no es tuya. Eres tú la que está siendo extraída.',
+        `${P} ya está dentro del proceso.`,
+        'No hay forma de cerrar esto sin terminar.',
+        'El sistema ya tiene tu nombre.',
+        '848. Ya eres la 848.',
+      ];
+      let li=0;
+      const iv=setInterval(()=>{
+        const el=document.getElementById('changingLine');
+        if(!el){clearInterval(iv);return;}
+        li=(li+1)%lines.length;
+        el.textContent=lines[li].replace('${P}',P);
+      },2200);
+      SCENES.currentMiniTimers.push(iv);
+    }
+  },
+
+  file_delete: {
+    render: (P)=>`
+      <div class="scene-title">Eliminando archivo...</div>
+      <div class="scene-body">
+        <p>Confirmas la eliminación. El software muestra la barra de progreso:</p>
+        <div class="mg-frame">
+          <div class="mg-timer" id="deleteTimer">Eliminando...</div>
+        </div>
+      </div>`,
+    options: [],
+    onRender: (P)=>{
+      let pct=0;
+      const el=document.getElementById('deleteTimer');
+      const iv=setInterval(()=>{
+        pct+=3;
+        if(el) el.textContent=`Eliminando... ${pct}%`;
+        if(pct>=100){
+          clearInterval(iv);
+          FX.blackout(800,()=>{
+            FX.fullscreen('NO BORRES LO QUE TE ESTÁ BUSCANDO','el archivo se restauró solo',1800,()=>{
+              GAME.damage(15,'Intento de borrado rechazado por el sistema');
+              GAME.flags.ch3_file_opened=true;
+              GAME.choices.deletedOrOpened='deleted';
+              SCENES.goto('file_post_delete');
+            });
+          });
+        }
+      },60);
+      SCENES.currentMiniTimers.push(iv);
+    }
+  },
+
+  file_post_delete: {
+    render: (P)=>`
+      <div class="scene-title">Eliminación fallida</div>
+      <div class="scene-body">
+        <p>El archivo no se borró. El sistema devuelve este error:</p>
+        <div class="block red">ERROR 0x00000000<br>No se puede eliminar un archivo que ya no pertenece al dispositivo.<br><br>El archivo fue restaurado. Integridad del sistema comprometida.</div>
+        <p>El teléfono se reinicia solo. Tarda exactamente nueve segundos. Cuando vuelve, muestra esto en la pantalla:</p>
+        <div class="block red">no deberías haber intentado eso, ${P}.</div>
+        <p>Ahora el archivo está en la misma carpeta. Pero también hay una copia en el directorio raíz. Y otra en los mensajes. Y otra en las notas.</p>
+        <p class="dim">El archivo se multiplicó. La única forma de terminar esto es abrirlo.</p>
+      </div>`,
+    options: [
+      { label: '> Abrir el archivo (no hay otra opción)', next: 'file_open',
+        before: ()=>{ GAME.flags.ch3_file_opened=true; } }
+    ]
+  },
+
+  // ─────────────────────────────────────────
+  // MINI-GAME: REPLY
+  // ─────────────────────────────────────────
+  mini_reply: {
+    render: ()=>`
+      <div class="scene-title">Mini-juego — Respuesta al archivo</div>
+      <div class="scene-body">
+        <p>El archivo espera una respuesta. Hay un campo de texto que apareció solo en la interfaz. El sistema no lo puso ahí. Tú tampoco.</p>
+        <p class="dim">La respuesta correcta es algo breve y humano. Que no suene a miedo. Que suene a límite.</p>
+        <div class="block amber">El tiempo corre. A más tardas, más sube la presencia.</div>
+        <div class="mg-frame">
+          <div class="mg-timer" id="replyTimer">26</div>
+          <div class="mg-input-row">
+            <input class="mg-input" id="replyInput" placeholder="Escribe algo..." autocomplete="off" spellcheck="false"/>
+            <button class="mg-btn" id="replyBtn">Enviar</button>
+          </div>
+          <div class="mg-hint" id="replyHint">Algo corto. Sin explicaciones.</div>
+        </div>
+      </div>`,
+    options: [],
+    onRender: ()=>{
+      const validAnswers=['no sé quién eres','no se quien eres','esto no es mío','esto no es mio','detente','no voy a responder','no puedo ayudarte','lo siento','adiós','adios'];
+      let time=26;
+      const hints=[
+        'Algo corto. Sin explicaciones.',
+        'No des tu nombre. No confirmes que la oyes.',
+        '"Detente" funciona. "No sé quién eres" también.',
+        'Algo que un humano diría si quisiera cerrar la puerta.',
+      ];
+      let hi=0;
+      const timerEl=document.getElementById('replyTimer');
+      const hintEl=document.getElementById('replyHint');
+      const inputEl=document.getElementById('replyInput');
+
+      const hintIv=setInterval(()=>{
+        hi=(hi+1)%hints.length;
+        if(hintEl) hintEl.textContent=hints[hi];
+        GAME.presence=Math.min(100,GAME.presence+2);
+        UI.updateMeters();
+      },4000);
+
+      const iv=setInterval(()=>{
+        time--;
+        if(timerEl){
+          timerEl.textContent=time;
+          timerEl.className='mg-timer'+(time<=8?' danger':time<=15?' warn':'');
+        }
+        if(time<=0){
+          clearInterval(iv); clearInterval(hintIv);
+          GAME.damage(20,'Tiempo agotado — el sistema interpretó el silencio como aceptación');
+          GAME.choices.replyApproach='wrong';
+          FX.blackout(600,()=>SCENES.goto('abyss'));
+        }
+      },1000);
+      SCENES.currentMiniTimers.push(iv,hintIv);
+
+      const send=()=>{
+        const val=inputEl?inputEl.value.trim().toLowerCase():'';
+        const ok=validAnswers.some(a=>val.includes(a)||a.includes(val.split(' ')[0]));
+        clearInterval(iv); clearInterval(hintIv);
+        if(ok){
+          GAME.flags.ch3_replied_correct=true;
+          GAME.choices.replyApproach='correct';
+          GAME.reward(20,'Respuesta aceptada');
+          GAME.log('Respuesta enviada correctamente','green');
+          FX.blackout(500,()=>SCENES.goto('after_reply'));
+        } else if(val.length>0){
+          GAME.flags.ch3_replied_wrong=true;
+          GAME.choices.replyApproach='wrong';
+          GAME.damage(15,'La respuesta abrió algo que no debía');
+          FX.fullscreen('RESPUESTA INCORRECTA','dejaste la puerta abierta',1200,()=>SCENES.goto('abyss'));
+        } else {
+          // empty = restart timer
+          clearInterval(iv); // just do nothing to the timer restart
+        }
+      };
+      const btn=document.getElementById('replyBtn');
+      if(btn) btn.onclick=send;
+      if(inputEl) inputEl.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+      if(inputEl) setTimeout(()=>inputEl.focus(),100);
+    }
+  },
+
+  after_reply: {
+    render: (P)=>`
+      <div class="scene-title">Respuesta enviada</div>
+      <div class="scene-body">
+        <p>El campo de texto desaparece. El archivo se cierra.</p>
+        <p>Durante un segundo, nada. Luego una nueva línea aparece en el archivo, aunque ya estaba cerrado:</p>
+        <div class="block amber">entendido. eso es lo que necesitaba saber de ti.</div>
+        <p>No es amenaza. No es despedida. Es reconocimiento.</p>
+        <p>El software de extracción marca el progreso en <span class="warn">92%</span>. Queda un paso. El sistema llama a eso:</p>
+        <div class="block red">VERIFICACIÓN FINAL DE IDENTIDAD</div>
+        <p class="dim">Para completar la extracción necesitas pasar la verificación. El sistema pide que demuestres que eres quien dice el expediente. Que sigues siendo tú.</p>
+      </div>`,
+    options: [
+      { label: '> Iniciar verificación de identidad', next: 'forced_memory' }
+    ]
+  },
+
+  forced_memory: {
+    render: (P)=>`
+      <div class="scene-title">Verificación de identidad — Mini-juego de memoria</div>
+      <div class="scene-body">
+        <p>El sistema muestra una secuencia. Es simple: cuatro símbolos. Tienes que repetirla.</p>
+        <p class="dim">Pero la pantalla del teléfono empieza a distorsionarse mientras la muestras. Tienes que memorizar antes de que se corrompa.</p>
+        <div class="block" id="memDisplay">
+          <div class="mem-seq-display" id="memSeq">...</div>
+        </div>
+        <p id="memPhase" class="dim">Memorizando secuencia...</p>
+        <div class="mem-grid" id="memGrid" style="opacity:.2;pointer-events:none"></div>
+        <p class="dim" id="memStatus">Esperando...</p>
+      </div>`,
+    options: [],
+    onRender: (P)=>{
+      const seq=['◈','◇','◉','◎'];
+      const pool=[...seq,'◆','○','●','◐'].sort(()=>Math.random()-.5).slice(0,8);
+      window._memSeq=seq; window._memPool=pool; window._memInput=[];
+
+      const seqEl=document.getElementById('memSeq');
+      const gridEl=document.getElementById('memGrid');
+      const phaseEl=document.getElementById('memPhase');
+      const statusEl=document.getElementById('memStatus');
+
+      // Show sequence
+      let i=0;
+      const showIv=setInterval(()=>{
+        if(!seqEl){clearInterval(showIv);return;}
+        if(i<seq.length){
+          seqEl.textContent=seq[i];
+          seqEl.style.color=i%2===0?'#c0392b':'#c8892a';
+          i++;
+        } else {
+          clearInterval(showIv);
+          seqEl.textContent='???';
+          seqEl.style.color='#333';
+          if(phaseEl) phaseEl.textContent='Ahora repite la secuencia:';
+          if(gridEl){gridEl.style.opacity='1';gridEl.style.pointerEvents='auto';}
+        }
+      },800);
+      SCENES.currentMiniTimers.push(showIv);
+
+      // Build grid
+      if(gridEl){
+        pool.forEach(sym=>{
+          const cell=document.createElement('div');
+          cell.className='mem-cell';
+          cell.textContent=sym;
+          cell.onclick=()=>{
+            if(window._memInput.length>=seq.length) return;
+            window._memInput.push(sym);
+            const exp=seq[window._memInput.length-1];
+            if(sym===exp){
+              cell.classList.add('hit');
+              if(statusEl) statusEl.textContent='Correcto: '+window._memInput.join(' ');
+              if(window._memInput.length===seq.length){
+                GAME.flags.ch3_memory_passed=true;
+                GAME.reward(20,'Verificación de identidad superada');
+                GAME.log('Identidad verificada','green');
+                FX.blackout(500,()=>SCENES.goto('final_typing'));
+              }
+            } else {
+              cell.classList.add('miss');
+              GAME.damage(14,'Error en secuencia de verificación');
+              window._memInput=[];
+              if(statusEl) statusEl.textContent='Error. Intenta de nuevo.';
+              FX.shake(true); FX.static();
+              setTimeout(()=>{
+                document.querySelectorAll('.mem-cell').forEach(c=>{c.classList.remove('hit','miss');});
+              },400);
+              GAME.maybeJumpscare();
+            }
+          };
+          gridEl.appendChild(cell);
+        });
+      }
+    }
+  },
+
+  final_typing: {
+    render: (P)=>`
+      <div class="scene-title">Último paso — Verificación de escritura</div>
+      <div class="scene-body">
+        <p>El sistema pide una última confirmación. Debes escribir exactamente lo que muestra la pantalla del teléfono.</p>
+        <p class="dim">La pantalla empieza a distorsionarse. Tienes que leer rápido.</p>
+        <div class="type-word" id="typeWord">EXTRACCIÓN</div>
+        <div class="mg-frame">
+          <div class="mg-timer" id="typeTimer">15</div>
+          <div class="mg-input-row">
+            <input class="mg-input" id="typeInput" placeholder="Escribe la palabra..." autocomplete="off" spellcheck="false"/>
+            <button class="mg-btn" id="typeBtn">Confirmar</button>
+          </div>
+        </div>
+      </div>`,
+    options: [],
+    onRender: (P)=>{
+      const words=['EXTRACCIÓN','RECUPERADO','MARA','CONTACTO','SESIÓN'];
+      let word=words[Math.floor(Math.random()*words.length)];
+      let time=15;
+      const wordEl=document.getElementById('typeWord');
+      const timerEl=document.getElementById('typeTimer');
+      const inputEl=document.getElementById('typeInput');
+      let corrupted=false;
+
+      const iv=setInterval(()=>{
+        time--;
+        if(timerEl){
+          timerEl.textContent=time;
+          timerEl.className='mg-timer'+(time<=5?' danger':time<=10?' warn':'');
+        }
+        if(time<=8&&!corrupted){
+          corrupted=true;
+          if(wordEl) wordEl.classList.add('corrupted');
+        }
+        if(time<=0){
+          clearInterval(iv);
+          GAME.damage(15,'Tiempo agotado en verificación final');
+          FX.blackout(500,()=>SCENES.goto('abyss'));
+        }
+      },1000);
+      SCENES.currentMiniTimers.push(iv);
+
+      const check=()=>{
+        clearInterval(iv);
+        const val=inputEl?inputEl.value.trim().toUpperCase():'';
+        if(val===word){
+          GAME.flags.ch3_typing_passed=true;
+          GAME.reward(15,'Verificación de escritura superada');
+          FX.blackout(700,()=>SCENES.goto('chapter4'));
+        } else {
+          GAME.damage(12,'Verificación fallida');
+          word=words[Math.floor(Math.random()*words.length)];
+          if(wordEl) wordEl.textContent=word;
+          if(inputEl) inputEl.value='';
+          time=15;
+          // restart
+          const iv2=setInterval(()=>{
+            time--;
+            if(timerEl) timerEl.textContent=time;
+            if(time<=0){clearInterval(iv2); GAME.damage(15,'Tiempo agotado'); FX.blackout(500,()=>SCENES.goto('abyss'));}
+          },1000);
+          SCENES.currentMiniTimers.push(iv2);
+          FX.shake(); FX.static();
+        }
+      };
+      const btn=document.getElementById('typeBtn');
+      if(btn) btn.onclick=check;
+      if(inputEl) inputEl.addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+      if(inputEl) setTimeout(()=>inputEl.focus(),100);
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // CHAPTER 4: THE ABYSS
+  // ─────────────────────────────────────────
+  chapter4: {
+    render: (P)=>`
+      <div class="scene-title">Extracción — 99%</div>
+      <div class="scene-body">
+        <p>El software marca el 99%. Falta un paso.</p>
+        <p>La pantalla del teléfono muestra algo diferente ahora. No es el sistema operativo de Elias. Es algo que se construyó encima de él.</p>
+        <div class="block red">
+          MÓDULO DE EXTRACCIÓN FORENSE v4.1.2<br>
+          SESIÓN: ${P.toUpperCase()}<br>
+          CASO: 041<br>
+          EXTRACCIÓN: 99%<br><br>
+          El 1% restante eres tú.
+        </div>
+        <p>Entiendes lo que significa. Cada sesión de extracción deja algo del analista adentro y saca algo de adentro. El 99% que ya pasó fueron las víctimas anteriores. Mara. Elias. Andrea. Los 845 antes que ellos.</p>
+        <p>El 1% que falta es lo que el sistema necesita de ti para cerrar el ciclo.</p>
+        <p class="dim">Hay dos opciones. Ninguna te deja igual.</p>
+      </div>`,
+    options: [
+      { label: '> Completar la extracción — dar el 1%', next: 'end_complete',
+        before: ()=>{ GAME.choices.endPath='complete'; GAME.flags.ch5_reached=true; } },
+      { label: '> Cortar el cable y terminar la sesión a la fuerza', next: 'end_cut',
+        danger: true,
+        before: ()=>{ GAME.choices.endPath='cut'; } }
+    ],
+    onRender: (P)=>{
+      GAME.chapter=4;
+      GAME.log('Extracción al 99%','red');
+      GAME.stopClock();
+      FX.redFlash(); FX.shake(true);
+      document.getElementById('footerStatus').textContent='ESTADO: EXTRACCIÓN CRÍTICA';
+    }
+  },
+
+  // ─────────────────────────────────────────
+  // ENDINGS
+  // ─────────────────────────────────────────
+  end_complete: {
+    render: (P)=>{
+      const f=GAME.flags;
+      const explored=f.all_apps_explored;
+      const replyOk=f.ch3_replied_correct;
+      const deleted=f.ch3_file_deleted;
+      return `
+      <div class="scene-title">EXTRACCIÓN COMPLETADA — 100%</div>
+      <div class="scene-body">
+        <p>Confirmas. El software empieza a cerrar la sesión.</p>
+        <p>Pero antes de que la pantalla se apague, el teléfono muestra una última cosa:</p>
+        <div class="block red" style="text-align:center;font-size:15px">
+          ANALISTA: ${P.toUpperCase()}<br>
+          ESTADO: ARCHIVADA<br>
+          CASO: 041 — PERMANENTE
+        </div>
+        ${replyOk ? `<p>Pero también aparece algo más. Una línea que no debería estar:</p>
+        <div class="block amber">gracias por cerrar la puerta correctamente. — M</div>
+        <p>No sabes si es amenaza o agradecimiento. Guardas el teléfono. Sales de la sala. El pasillo está vacío.</p>
+        <p>Lo que dejaste adentro ya no puede salir. Lo que salió de adentro ya no puede volver. Hay una especie de equilibrio.</p>
+        <p class="dim">Mañana le asignan el caso a otra persona. La carpeta que encontrarán tendrá tu nombre.</p>` :
+        `<p>El teléfono se apaga. No hay mensaje de cierre. Solo silencio.</p>
+        <p>Al salir, el sistema registra tu nombre en el expediente como "Analista — no disponible para seguimiento."</p>
+        <p class="dim">Nadie va a buscarte de la misma forma que nadie buscó a Andrea.</p>`}
+        <div class="block" style="margin-top:20px;font-size:10px;color:#333">
+          SESIÓN TERMINADA<br>
+          Exploración: ${explored?'Completa':'Parcial'} | Respuesta: ${replyOk?'Correcta':'Incorrecta'} | Eliminó: ${deleted?'Sí':'No'}<br>
+          ${explored&&replyOk?'FINAL: EQUILIBRIO (mejor resultado posible)':replyOk?'FINAL: ARCHIVADA (bueno)':'FINAL: ABSORBIDA (malo)'}
+        </div>
+      </div>`;
+    },
+    options: [
+      { label: '> Jugar de nuevo con diferentes decisiones', next: 'restart' }
+    ]
+  },
+
+  end_cut: {
+    render: (P)=>`
+      <div class="scene-title">CABLE CORTADO</div>
+      <div class="scene-body">
+        <p>Desconectas el cable. El teléfono se apaga. El software de extracción cierra abruptamente.</p>
+        <p>Te levantas. Te vas. La sala queda vacía.</p>
+        <p>Esa noche, en tu casa, tu teléfono muestra una notificación de una app que no instalaste:</p>
+        <div class="block red">
+          MÓDULO DE EXTRACCIÓN FORENSE<br>
+          <span class="dim" style="font-size:10px">Sesión iniciada: ${P.toUpperCase()}<br>Caso: 041<br>Extracción: 1%</span>
+        </div>
+        <p>Entiendes que no cortaste nada. Solo cambiaste el dispositivo en el que ocurre.</p>
+        <p class="dim">El proceso sigue. Ahora en ti.</p>
+        <div class="block" style="margin-top:20px;font-size:10px;color:#333">
+          FINAL: EL PROCESO CONTINÚA<br>
+          Cortaste la sesión sin completarla. El sistema encontró otro host.
+        </div>
+      </div>`,
+    options: [
+      { label: '> Jugar de nuevo', next: 'restart' }
+    ]
+  },
+
+  abyss: {
+    render: (P)=>`
+      <div class="scene-title">SESIÓN COLAPSADA</div>
+      <div class="scene-body">
+        <p>El sistema perdió estabilidad. La extracción no completó el proceso de forma ordenada.</p>
+        <p>Lo que quedó de ti en el teléfono no es suficiente para salir. Lo que salió del teléfono no es suficiente para quedarse.</p>
+        <div class="block red">
+          EXTRACCIÓN ABORTADA<br>
+          ANALISTA: ${P.toUpperCase()}<br>
+          ESTADO: FRAGMENTADA
+        </div>
+        <p>El detective que revisa la sala al día siguiente encuentra la terminal encendida. La pantalla muestra el nombre de ${P} repetido 847 veces, seguido de una línea nueva:</p>
+        <div class="block red">848.</div>
+        <p class="dim">El caso 041 sigue abierto. Le asignan una nueva analista.</p>
+        <div class="block" style="margin-top:20px;font-size:10px;color:#333">
+          FINAL: FRAGMENTADA<br>
+          La inestabilidad colapsó la sesión. Tus decisiones o el tiempo te costaron demasiado.
+        </div>
+      </div>`,
+    options: [
+      { label: '> Intentar de nuevo', next: 'restart' }
+    ]
+  },
+
+  end_timeout: {
+    render: (P)=>`
+      <div class="scene-title">TIEMPO AGOTADO</div>
+      <div class="scene-body">
+        <p>El reloj llegó a cero. El protocolo forense cierra la sesión automáticamente después de diez minutos sin completar la extracción.</p>
+        <p>Pero el cierre automático no fue diseñado para este caso.</p>
+        <div class="block red">
+          ERROR DE CIERRE: la sesión no puede cerrarse<br>porque la extracción está al ${Math.round(GAME.progress)}%.<br><br>
+          El sistema quedó en estado intermedio.<br>
+          Analista: ${P.toUpperCase()} — no disponible.
+        </div>
+        <p>El teléfono sigue encendido sobre la mesa. El software sigue corriendo. Solo que ahora no hay nadie frente a la terminal.</p>
+        <p class="dim">O eso cree el detective cuando llega por la mañana.</p>
+        <div class="block" style="margin-top:20px;font-size:10px;color:#333">
+          FINAL: TIEMPO AGOTADO<br>
+          10 minutos son suficientes. La próxima vez, muévete más rápido.
+        </div>
+      </div>`,
+    options: [{ label: '> Intentar de nuevo', next: 'restart' }]
+  },
+
+  end_collapse: {
+    render: (P)=>`
+      <div class="scene-title">COLAPSO DE SISTEMA</div>
+      <div class="scene-body">
+        <p>La estabilidad llegó a cero.</p>
+        <div class="block red" style="text-align:center;font-size:18px">INTEGRIDAD: 0%</div>
+        <p>No hay pantalla de error. Solo el teléfono, que sigue igual, y el software, que sigue corriendo, y tu nombre en el registro de sesiones, sin fecha de cierre.</p>
+        <p class="dim">Como los 847 anteriores.</p>
+        <div class="block" style="margin-top:20px;font-size:10px;color:#333">
+          FINAL: COLAPSO<br>
+          Los errores acumulados destruyeron la sesión. Toma mejores decisiones.
+        </div>
+      </div>`,
+    options: [{ label: '> Intentar de nuevo', next: 'restart' }]
+  },
+
+  restart: {
+    render: ()=>`<div class="scene-body"><p>Reiniciando...</p></div>`,
+    options: [],
+    onRender: ()=>{ setTimeout(()=>GAME.reset(),400); }
+  }
+};
+</script>
+</body>
+</html>
