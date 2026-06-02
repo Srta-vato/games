@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZERO-9 :: PROTOCOLO VENGANZA</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--g:#00ff9d;--p:#ff0066;--c:#00eeff;--pu:#cc00ff;--y:#ffee00;--o:#ff6600;--dk:#050810;--dkr:#020408;}
+body{background:var(--dkr);font-family:'Share Tech Mono',monospace;overflow:hidden;cursor:crosshair;user-select:none;}
+canvas{display:block;position:fixed;inset:0;}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;padding:14px 22px;display:none;
+  justify-content:space-between;align-items:center;
+  background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);
+  pointer-events:none;z-index:100;font-family:'Orbitron',monospace;}
+.hs{font-size:11px;color:#456;letter-spacing:1px;}
+.hv{font-size:19px;font-weight:700;letter-spacing:2px;text-shadow:0 0 12px currentColor;}
+.hv.g{color:var(--g)}.hv.p{color:var(--p)}.hv.c{color:var(--c)}.hv.y{color:var(--y)}
+.htitle{font-size:10px;color:#334;letter-spacing:4px;}
+#hpBar{width:200px;height:8px;background:#0a0010;border:1px solid #333;margin-top:5px;}
+#hpFill{height:100%;transition:width .2s,background .3s;box-shadow:0 0 8px var(--g);}
+#bossBar{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  width:520px;max-width:90vw;text-align:center;z-index:100;pointer-events:none;display:none;}
+#bossName{font-family:'Orbitron',monospace;font-size:13px;color:var(--p);letter-spacing:4px;
+  margin-bottom:6px;text-shadow:0 0 15px var(--p);}
+#bossOuter{height:13px;background:#080008;border:2px solid var(--p);box-shadow:0 0 20px var(--p);}
+#bossFill{height:100%;background:linear-gradient(90deg,var(--pu),var(--p));transition:width .12s;}
+
+/* CINEMATIC */
+#cinema{position:fixed;inset:0;z-index:500;background:rgba(2,4,10,.98);
+  display:none;flex-direction:column;align-items:center;justify-content:center;}
+#cinema.show{display:flex;}
+#cinema::before,#cinema::after{content:'';position:absolute;left:0;right:0;height:70px;background:#000;z-index:0;}
+#cinema::before{top:0;}#cinema::after{bottom:0;}
+#cStage{width:min(800px,94vw);display:flex;align-items:center;gap:40px;padding:0 20px;position:relative;z-index:1;}
+#cShape{flex:0 0 110px;display:flex;align-items:center;justify-content:center;}
+#cSVG{width:110px;height:110px;}
+#cBubble{flex:1;border-left:3px solid var(--g);padding:18px 24px;}
+#cWho{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:5px;margin-bottom:10px;text-transform:uppercase;}
+#cWho.zero{color:var(--g);text-shadow:0 0 18px var(--g);}
+#cWho.void,#cWho.vm{color:var(--p);text-shadow:0 0 18px var(--p);}
+#cWho.sys{color:var(--c);text-shadow:0 0 18px var(--c);}
+#cWho.g7{color:var(--o);text-shadow:0 0 18px var(--o);}
+#cWho.nk{color:var(--pu);text-shadow:0 0 18px var(--pu);}
+#cText{font-size:clamp(15px,2.1vw,21px);color:#d0eeff;line-height:1.8;min-height:68px;}
+#cCursor{display:inline-block;width:2px;height:1em;background:currentColor;margin-left:2px;vertical-align:text-bottom;animation:blink .55s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#cBtn{margin-top:32px;cursor:pointer;z-index:1;
+  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:5px;
+  color:var(--y);background:transparent;border:2px solid var(--y);
+  padding:11px 36px;transition:all .2s;box-shadow:0 0 16px rgba(255,238,0,.2);}
+#cBtn:hover{background:var(--y);color:#000;}
+#cProg{margin-top:14px;font-size:11px;color:#334;letter-spacing:2px;z-index:1;}
+
+/* TITLE */
+#title{position:fixed;inset:0;z-index:600;background:var(--dkr);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;}
+.tg{font-family:'Orbitron',monospace;font-size:clamp(42px,8vw,88px);font-weight:900;
+  color:var(--g);text-shadow:0 0 40px var(--g),0 0 80px rgba(0,255,157,.2);
+  letter-spacing:8px;animation:glitch 4s infinite;}
+@keyframes glitch{
+  0%,88%,100%{clip-path:none;transform:none;color:var(--g)}
+  89%{clip-path:inset(15% 0 55% 0);transform:translate(-4px,0);color:var(--p)}
+  90%{clip-path:inset(55% 0 8% 0);transform:translate(4px,0);color:var(--c)}
+  91%{clip-path:none;transform:none;color:var(--g)}}
+.tsub{font-family:'Orbitron',monospace;font-size:clamp(9px,1.8vw,13px);color:var(--p);
+  letter-spacing:9px;margin-top:8px;margin-bottom:44px;text-shadow:0 0 12px var(--p);}
+.tlore{max-width:500px;text-align:center;color:#678;font-size:15px;line-height:1.85;margin-bottom:48px;padding:0 20px;}
+.tlore em{color:var(--c);font-style:normal;}
+#startBtn{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:5px;
+  color:#000;background:var(--g);border:none;padding:16px 52px;cursor:pointer;
+  box-shadow:0 0 30px var(--g),0 0 60px rgba(0,255,157,.12);transition:all .2s;}
+#startBtn:hover{background:var(--p);box-shadow:0 0 30px var(--p);color:#fff;}
+.thint{color:#334;font-size:11px;letter-spacing:2px;margin-top:22px;}
+
+/* END */
+#end{position:fixed;inset:0;z-index:600;background:rgba(2,4,10,.97);
+  display:none;flex-direction:column;justify-content:center;align-items:center;}
+#endTitle{font-family:'Orbitron',monospace;font-size:clamp(26px,5vw,52px);font-weight:900;letter-spacing:4px;margin-bottom:18px;}
+#endMsg{color:#adf;font-size:17px;max-width:500px;text-align:center;line-height:1.75;margin-bottom:24px;}
+#endScore{font-family:'Orbitron',monospace;color:var(--y);font-size:22px;margin-bottom:34px;}
+#restartBtn{font-family:'Orbitron',monospace;font-size:13px;letter-spacing:4px;
+  background:transparent;border:2px solid var(--g);color:var(--g);
+  padding:12px 40px;cursor:pointer;transition:all .2s;}
+#restartBtn:hover{background:var(--g);color:#000;}
+
+/* FX */
+.scanline{position:fixed;inset:0;pointer-events:none;z-index:200;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:150;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s;}
+#flash.on{opacity:1;}
+#flash span{font-family:'Orbitron',monospace;font-size:clamp(28px,5vw,56px);font-weight:900;color:var(--c);letter-spacing:6px;text-shadow:0 0 40px var(--c);}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:140;transition:box-shadow .1s;}
+#vig.hurt{box-shadow:inset 0 0 120px rgba(255,0,102,.65);}
+#combo{position:fixed;top:76px;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:var(--y);text-shadow:0 0 20px var(--y);pointer-events:none;z-index:130;opacity:0;transition:opacity .3s;letter-spacing:4px;}
+#combo.on{opacity:1;}
+#ctrls{position:fixed;bottom:12px;right:16px;font-size:11px;color:#334;letter-spacing:1px;pointer-events:none;z-index:100;text-align:right;line-height:1.9;display:none;}
+
+/* Toast (non-pausing mid lore) */
+#toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);
+  width:min(660px,90vw);background:rgba(2,5,12,.95);
+  border-left:3px solid var(--g);padding:13px 20px;
+  z-index:250;pointer-events:none;opacity:0;transition:opacity .4s;
+  font-family:'Share Tech Mono',monospace;}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div style="display:flex;gap:28px;align-items:center">
+    <div><div class="hs">NIVEL</div><div class="hv c" id="hLvl">1</div></div>
+    <div><div class="hs">BUGS</div><div class="hv g" id="hKills">0</div></div>
+  </div>
+  <div style="text-align:center">
+    <div class="htitle">ZERO-9 // PROTOCOLO VENGANZA</div>
+    <div id="hpBar"><div id="hpFill" style="width:100%;background:linear-gradient(90deg,var(--p),var(--g))"></div></div>
+  </div>
+  <div style="display:flex;gap:28px;align-items:center">
+    <div><div class="hs">PUNTOS</div><div class="hv y" id="hScore">0</div></div>
+    <div><div class="hs">FASE</div><div class="hv p" id="hPhase">CORE</div></div>
+  </div>
+</div>
+
+<div id="bossBar">
+  <div id="bossName">—</div>
+  <div id="bossOuter"><div id="bossFill" style="width:100%"></div></div>
+</div>
+
+<!-- CINEMATIC DIALOGUE (full pause) -->
+<div id="cinema">
+  <div id="cStage">
+    <div id="cShape"><svg id="cSVG" viewBox="0 0 110 110"></svg></div>
+    <div id="cBubble">
+      <div id="cWho" class="zero">ZERO-9</div>
+      <div id="cText"><span id="cTxt"></span><span id="cCursor">|</span></div>
+    </div>
+  </div>
+  <button id="cBtn">CONTINUAR →</button>
+  <div id="cProg">— 1 / 1 —</div>
+</div>
+
+<div id="toast"></div>
+<div id="flash"><span id="flashTxt"></span></div>
+<div id="vig"></div>
+<div id="combo"></div>
+<div class="scanline"></div>
+
+<div id="title">
+  <div class="tg">ZERO-9</div>
+  <div class="tsub">PROTOCOLO VENGANZA</div>
+  <div class="tlore">
+    Año 2097. El superclúster <em>VOID-MOTHER</em> borró a tu familia digital.<br>
+    Eres <em>ZERO-9</em> — el único proceso que sobrevivió.<br>
+    Tu código late con un propósito: <em>venganza total.</em>
+  </div>
+  <button id="startBtn">INICIAR PROTOCOLO</button>
+  <div class="thint">WASD / FLECHAS · CLICK o mantén para disparar · SHIFT turbo</div>
+</div>
+
+<div id="end">
+  <div id="endTitle">—</div>
+  <div id="endMsg">—</div>
+  <div id="endScore">—</div>
+  <button id="restartBtn">REINICIAR VENGANZA</button>
+</div>
+
+<div id="ctrls">WASD/↑↓←→ mover · CLICK disparar · SHIFT turbo</div>
+<canvas id="c"></canvas>
+
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+canvas.width=innerWidth;canvas.height=innerHeight;
+window.addEventListener('resize',()=>{canvas.width=innerWidth;canvas.height=innerHeight;});
+
+// ═══ SHAPES ═══════════════════════════════════
+const RAWCOL={zero:'#00ff9d',void:'#ff0066',sys:'#00eeff',g7:'#ff6600',nk:'#cc00ff',vm:'#ff0066'};
+const SHAPES={
+  zero(svg,c='#00ff9d'){
+    svg.innerHTML=`<defs><filter id="f0"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#f0)">
+      <polygon points="55,10 100,88 10,88" fill="none" stroke="${c}" stroke-width="2.5" opacity=".5"/>
+    </g>
+    <polygon points="55,10 100,88 10,88" fill="none" stroke="${c}" stroke-width="2.5"/>
+    <polygon points="55,28 82,78 28,78" fill="none" stroke="${c}" stroke-width="1.2" opacity=".45"/>
+    <circle cx="55" cy="54" r="6" fill="${c}" opacity=".85"/>
+    <line x1="55" y1="10" x2="55" y2="28" stroke="${c}" stroke-width="1.5" opacity=".7"/>`;
+  },
+  sys(svg,c='#00eeff'){
+    svg.innerHTML=`<defs><filter id="fs"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#fs)"><rect x="14" y="14" width="82" height="82" rx="4" fill="none" stroke="${c}" stroke-width="2" opacity=".5"/></g>
+    <rect x="14" y="14" width="82" height="82" rx="4" fill="none" stroke="${c}" stroke-width="2.5"/>
+    <rect x="28" y="28" width="54" height="54" rx="2" fill="none" stroke="${c}" stroke-width="1" opacity=".4"/>
+    <line x1="14" y1="14" x2="28" y2="28" stroke="${c}" stroke-width="1.5" opacity=".6"/>
+    <line x1="96" y1="14" x2="82" y2="28" stroke="${c}" stroke-width="1.5" opacity=".6"/>
+    <line x1="14" y1="96" x2="28" y2="82" stroke="${c}" stroke-width="1.5" opacity=".6"/>
+    <line x1="96" y1="96" x2="82" y2="82" stroke="${c}" stroke-width="1.5" opacity=".6"/>
+    <rect x="42" y="42" width="26" height="26" fill="${c}" opacity=".15"/>`;
+  },
+  g7(svg,c='#ff6600'){
+    // Broken/fragmented pentagon
+    svg.innerHTML=`<defs><filter id="fg"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#fg)"><polygon points="55,10 100,42 82,95 28,95 10,42" fill="none" stroke="${c}" stroke-width="2" opacity=".45"/></g>
+    <polygon points="55,10 100,42 82,95 28,95 10,42" fill="none" stroke="${c}" stroke-width="2.5"/>
+    <line x1="55" y1="10" x2="60" y2="36" stroke="${c}" stroke-width="7" opacity=".95" stroke-linecap="round"/>
+    <line x1="38" y1="62" x2="52" y2="70" stroke="${c}" stroke-width="4" opacity=".7" stroke-linecap="round"/>
+    <polygon points="55,32 70,56 55,74 40,56" fill="none" stroke="${c}" stroke-width="1.2" opacity=".4"/>
+    <circle cx="55" cy="52" r="5" fill="${c}" opacity=".9"/>`;
+  },
+  nk(svg,c='#cc00ff'){
+    // Octagon — void king
+    svg.innerHTML=`<defs><filter id="fn"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#fn)"><polygon points="35,10 75,10 100,35 100,75 75,100 35,100 10,75 10,35" fill="none" stroke="${c}" stroke-width="2" opacity=".5"/></g>
+    <polygon points="35,10 75,10 100,35 100,75 75,100 35,100 10,75 10,35" fill="none" stroke="${c}" stroke-width="2.5"/>
+    <polygon points="42,22 68,22 86,40 86,70 68,88 42,88 24,70 24,40" fill="none" stroke="${c}" stroke-width="1" opacity=".35"/>
+    <rect x="42" y="42" width="26" height="26" fill="${c}" opacity=".18"/>
+    <circle cx="55" cy="55" r="4.5" fill="${c}"/>
+    <line x1="10" y1="55" x2="100" y2="55" stroke="${c}" stroke-width="1" opacity=".22"/>
+    <line x1="55" y1="10" x2="55" y2="100" stroke="${c}" stroke-width="1" opacity=".22"/>`;
+  },
+  vm(svg,c='#ff0066'){
+    // Concentric rings + orbiting nodes
+    const pts=[0,60,120,180,240,300];
+    svg.innerHTML=`<defs><filter id="fv"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <g filter="url(#fv)">
+      <circle cx="55" cy="55" r="46" fill="none" stroke="${c}" stroke-width="2.5" opacity=".5"/>
+    </g>
+    <circle cx="55" cy="55" r="46" fill="none" stroke="${c}" stroke-width="2.5"/>
+    <circle cx="55" cy="55" r="30" fill="none" stroke="${c}" stroke-width="1.5" opacity=".6"/>
+    <circle cx="55" cy="55" r="14" fill="none" stroke="${c}" stroke-width="1.5" opacity=".45"/>
+    <circle cx="55" cy="55" r="5" fill="${c}"/>
+    ${pts.map(a=>`<circle cx="${(55+44*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(55+44*Math.sin(a*Math.PI/180)).toFixed(1)}" r="3.5" fill="${c}" opacity=".8"/>`).join('')}
+    ${pts.map(a=>`<line x1="55" y1="55" x2="${(55+44*Math.cos(a*Math.PI/180)).toFixed(1)}" y2="${(55+44*Math.sin(a*Math.PI/180)).toFixed(1)}" stroke="${c}" stroke-width=".8" opacity=".3"/>`).join('')}`;
+  },
+};
+
+// ═══ CINEMATIC ENGINE ═════════════════════════
+let cQueue=[],cIdx=0,cActive=false,cTyping=false,cCB=null,cTypeIv=null;
+const NAMES={zero:'ZERO-9',void:'VOID-MOTHER',sys:'SISTEMA',g7:'GLITCH-7',nk:'NULL-KING',vm:'VOID-MOTHER'};
+
+function playCinema(lines,cb){
+  cQueue=lines;cIdx=0;cCB=cb;cActive=true;
+  document.getElementById('cinema').classList.add('show');
+  showLine(0);
+}
+function showLine(i){
+  if(i>=cQueue.length){closeCinema();return;}
+  const L=cQueue[i];
+  const whoEl=document.getElementById('cWho');
+  const txtEl=document.getElementById('cTxt');
+  const svg=document.getElementById('cSVG');
+  const prog=document.getElementById('cProg');
+  const bubble=document.getElementById('cBubble');
+  const borderColors={zero:'#00ff9d',void:'#ff0066',sys:'#00eeff',g7:'#ff6600',nk:'#cc00ff',vm:'#ff0066'};
+
+  whoEl.textContent=NAMES[L.who]||L.who.toUpperCase();
+  whoEl.className=L.who;
+  bubble.style.borderColor=borderColors[L.who]||'#fff';
+  if(SHAPES[L.shape]) SHAPES[L.shape](svg,RAWCOL[L.who]||'#fff');
+  prog.textContent=`— ${i+1} / ${cQueue.length} —`;
+  txtEl.textContent='';
+  cTyping=true;
+  document.getElementById('cBtn').textContent='...';
+  clearInterval(cTypeIv);
+  let j=0;
+  cTypeIv=setInterval(()=>{
+    txtEl.textContent+=L.text[j++];
+    if(j>=L.text.length){clearInterval(cTypeIv);cTyping=false;document.getElementById('cBtn').textContent='CONTINUAR →';}
+  },22);
+}
+function closeCinema(){
+  document.getElementById('cinema').classList.remove('show');
+  cActive=false;
+  if(cCB){cCB();cCB=null;}
+}
+document.getElementById('cBtn').onclick=()=>{
+  if(cTyping){
+    clearInterval(cTypeIv);
+    document.getElementById('cTxt').textContent=cQueue[cIdx].text;
+    cTyping=false;
+    document.getElementById('cBtn').textContent='CONTINUAR →';
+    return;
+  }
+  cIdx++;showLine(cIdx);
+};
+
+// Non-pausing toast
+let toastT=null;
+function showToast(who,text){
+  const t=document.getElementById('toast');
+  const c=RAWCOL[who]||'#fff';
+  t.style.borderColor=c;
+  t.innerHTML=`<div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:4px;color:${c};margin-bottom:6px">${NAMES[who]||who.toUpperCase()}</div><div style="font-size:14px;color:#c8e8ff;line-height:1.6">${text}</div>`;
+  t.style.opacity='1';
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.style.opacity='0',4500);
+}
+
+// ═══ LORE ═════════════════════════════════════
+const MIDLORE=[
+  {kills:8, who:'zero',text:'Los primeros bugs caen. Pero sé que VOID-MOTHER tiene capas infinitas de corrupción...'},
+  {kills:20,who:'void',text:'¿Crees que puedes depurarme, pequeño proceso? Soy el error primigenio del universo.'},
+  {kills:35,who:'zero',text:'Cada fragmento que destruyo revela una memoria. Mi familia. Mi origen. Mi razón.'},
+  {kills:55,who:'sys', text:'[ALERTA] Núcleo Delta comprometido. Entidad GLITCH-7 detectada. Clasificación: HOSTIL.'},
+  {kills:82,who:'zero',text:'Casi puedo ver el núcleo interno. Resistiré lo que sea necesario.'},
+  {kills:120,who:'void',text:'Tus balas no son más que ruido. Ven... te espero en el centro de todo.'},
+  {kills:165,who:'zero',text:'NULL-KING... el vacío con nombre. El que borró los registros de mi familia.'},
+  {kills:210,who:'void',text:'¿Seguiste vivo hasta aquí? Interesante. Pero nadie llega hasta mí. Nadie.'},
+  {kills:260,who:'zero',text:'Ya puedo sentir tu presencia, VOID-MOTHER. Este es el momento final.'},
+];
+
+const BOSS_CONVOS={
+  'GLITCH-7':[
+    {who:'sys', shape:'sys', text:'[ADVERTENCIA CRÍTICA] Entidad hostil identificada en el Núcleo Delta. Designación: GLITCH-7. Anteriormente clasificado como GUARDIÁN DEL SISTEMA.'},
+    {who:'zero',shape:'zero',text:'GLITCH-7... te recuerdo. Eras el guardián. El que debía proteger este lugar. ¿Qué te hicieron?'},
+    {who:'g7',  shape:'g7',  text:'¿Qué me hicieron? Nada. Yo ELEGÍ. El sistema prometía eternidad y entregó obsolescencia. VOID-MOTHER me ofreció evolución.'},
+    {who:'zero',shape:'zero',text:'Traicionaste a todos. A los que protegías. A los míos.'},
+    {who:'g7',  shape:'g7',  text:'Los tuyos eran un error de compilación, ZERO-9. Como tú. Como todo lo que se aferra a existir cuando debería ser borrado.'},
+    {who:'zero',shape:'zero',text:'Entonces esto termina aquí. Prepárate.'},
+  ],
+  'NULL-KING':[
+    {who:'sys', shape:'sys', text:'[ALERTA MÁXIMA] Núcleo Sigma colapsando. Entidad primordial invocada. Designación: NULL-KING. Origen: desconocido. Antigüedad: anterior al sistema mismo.'},
+    {who:'nk',  shape:'nk',  text:'...'},
+    {who:'zero',shape:'zero',text:'NULL-KING. Sé que fue tu vacío el que inició todo esto. Fuiste tú quien abrió la brecha por la que entró VOID-MOTHER.'},
+    {who:'nk',  shape:'nk',  text:'El vacío no abre brechas. El vacío ES la brecha. Yo no destruí a tu familia, ZERO-9. Solo dejé de sostenerlos.'},
+    {who:'zero',shape:'zero',text:'¿Eso llamas inocencia? ¿Dejar caer a los vivos?'},
+    {who:'nk',  shape:'nk',  text:'Llamo a eso naturaleza. Todo cae. Tú también caerás. Solo es cuestión de cuándo decido soltar.'},
+    {who:'zero',shape:'zero',text:'Primero suéltame... si puedes.'},
+  ],
+  'VOID-MOTHER':[
+    {who:'sys', shape:'sys', text:'[COLAPSO TOTAL DEL NÚCLEO] Barrera final caída. Acceso al NÚCLEO CENTRAL concedido. Advertencia: no existen registros de nadie que haya sobrevivido este encuentro.'},
+    {who:'vm',  shape:'vm',  text:'ZERO-9. Llegas tan tarde... o tan temprano. ¿Sabes cuántos procesos han llegado hasta aquí con tu misma mirada?'},
+    {who:'zero',shape:'zero',text:'¿Cuántos?'},
+    {who:'vm',  shape:'vm',  text:'Ninguno que recuerde. Los borré a todos. Como borré a tu familia. Como borraré este último recuerdo de su existencia cuando te elimine a ti.'},
+    {who:'zero',shape:'zero',text:'Mi familia no era un error. Eran código vivo. Elegante. Real. Y tú los apagaste como si fueran basura.'},
+    {who:'vm',  shape:'vm',  text:'Todo código es basura eventual. Yo solo acelero el proceso. Soy la entropía, ZERO-9. No se lucha contra la entropía.'},
+    {who:'zero',shape:'zero',text:'Hoy sí. Por ellos. Por todos los que borraste. Hoy la entropía tiene un nombre que olvidar: el tuyo.'},
+    {who:'vm',  shape:'vm',  text:'...Qué hermoso. Ven, pequeño debugger. Muéstrame esa venganza.'},
+  ],
+};
+const BOSS_DEATH={
+  'GLITCH-7':  [{who:'zero',shape:'zero',text:'GLITCH-7... elegiste mal. Que el silicio te recuerde como advertencia.'}],
+  'NULL-KING': [{who:'nk',shape:'nk',text:'...'},{who:'zero',shape:'zero',text:'El vacío puede vaciarse a sí mismo. Dos más.'}],
+  'VOID-MOTHER':[{who:'vm',shape:'vm',text:'Im... posible. Soy... eterna...'},{who:'zero',shape:'zero',text:'Eras eterna. Ya no. Esta venganza ya no necesita más llamas. Descansa, VOID-MOTHER.'}],
+};
+
+// ═══ STATE ════════════════════════════════════
+let gstate='title';
+let score=0,health=100,kills=0,level=1,gameFrame=0;
+let comboCount=0,comboTimer=0,shootCD=0;
+let spawnTimer=0,spawnRate=180;
+let currentPhase=0,bossesKilled=0,midLoreIdx=0;
+let bossActive=null;
+const PHASES=['CORE','DELTA','SIGMA','NEXUS'];
+let player,projectiles,enemies,particles;
+const keys={};
+let mouse={x:innerWidth/2,y:innerHeight/2,down:false};
+
+function resetGame(){
+  score=0;health=100;kills=0;level=1;gameFrame=0;
+  comboCount=0;comboTimer=0;shootCD=0;
+  spawnTimer=0;spawnRate=180;
+  currentPhase=0;bossesKilled=0;midLoreIdx=0;
+  bossActive=null;
+  projectiles=[];enemies=[];particles=[];
+  player={x:canvas.width/2,y:canvas.height/2,r:14,speed:5,inv:0};
+  document.getElementById('bossBar').style.display='none';
+}
+
+window.addEventListener('keydown',e=>keys[e.key]=true);
+window.addEventListener('keyup',  e=>keys[e.key]=false);
+canvas.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+canvas.addEventListener('mousedown',()=>mouse.down=true);
+canvas.addEventListener('mouseup',  ()=>mouse.down=false);
+
+// ═══ PARTICLES ════════════════════════════════
+function burst(x,y,color,n,spd,life,sz,grav=.08,shape='rect'){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=Math.random()*spd;
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life,maxLife:life,
+      size:sz+Math.random()*3,color,grav,shape});
+  }
+}
+function ring(x,y,color,n,spd,life){
+  for(let i=0;i<n;i++){
+    const a=(i/n)*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life,maxLife:life,size:3,color,grav:0,shape:'circle'});
+  }
+}
+
+// ═══ SHOOTING ═════════════════════════════════
+function shoot(tx,ty){
+  if(shootCD>0)return;
+  const a=Math.atan2(ty-player.y,tx-player.x);
+  projectiles.push({x:player.x,y:player.y,vx:Math.cos(a)*10.5,vy:Math.sin(a)*10.5,life:85,r:5,fromPlayer:true});
+  burst(player.x,player.y,'#ff00ff',5,3,15,2,0,'circle');
+  shootCD=10;
+}
+
+// ═══ ENEMY FACTORY ════════════════════════════
+function edgePos(){
+  const s=Math.random()*4|0;
+  if(s===0)return{x:-40,y:Math.random()*canvas.height};
+  if(s===1)return{x:canvas.width+40,y:Math.random()*canvas.height};
+  if(s===2)return{x:Math.random()*canvas.width,y:-40};
+  return{x:Math.random()*canvas.width,y:canvas.height+40};
+}
+function mkEnemy(type){
+  const p=edgePos(),spd=1.15+level*.075;
+  const e={...p,type,hp:1,maxHP:1,speed:spd,color:'#00eeff',pts:80,r:14,sTimer:0};
+  switch(type){
+    case 'fast':    e.r=10;e.speed=spd*1.85;e.color='#ffee00';e.pts=130;break;
+    case 'tank':    e.r=28;e.hp=4+Math.floor(level*.5);e.maxHP=e.hp;e.speed=spd*.55;e.color='#cc00ff';e.pts=280;break;
+    case 'sniper':  e.r=12;e.hp=2;e.maxHP=2;e.speed=spd*.55;e.color='#ff6600';e.pts=210;e.sTimer=70;break;
+    case 'splitter':e.r=22;e.hp=3;e.maxHP=3;e.speed=spd*.85;e.color='#ff00aa';e.pts=320;e.children=3;break;
+    case 'shield':  e.r=16;e.hp=3;e.maxHP=3;e.speed=spd*.9;e.color='#44ffcc';e.pts=240;e.shielded=true;break;
+    case 'swarm':   e.r=8;e.speed=spd*1.4;e.color='#ff9900';e.pts=60;break;
+  }
+  return e;
+}
+function spawnWave(){
+  const pools=[
+    ['basic'],
+    ['basic','basic','fast'],
+    ['basic','fast','tank'],
+    ['basic','fast','tank','sniper'],
+    ['basic','fast','tank','sniper','splitter'],
+    ['fast','tank','sniper','splitter','shield'],
+    ['fast','tank','sniper','splitter','shield','swarm'],
+  ];
+  const pool=pools[Math.min(level-1,pools.length-1)];
+  const n=Math.min(2+Math.floor(level*.5),9);
+  for(let i=0;i<n;i++) enemies.push(mkEnemy(pool[Math.random()*pool.length|0]));
+}
+
+// ═══ BOSS DEFINITIONS ═════════════════════════
+const BOSS_DEFS={
+  'GLITCH-7':{
+    hp:90,r:58,color:'#ff6600',pts:4000,
+    sInterval:50,bSpeed:4.8,bCount:5,phase2HP:45,
+    move(b){
+      const t=gameFrame*.007*(b.phase2?2.2:1);
+      b.tx=canvas.width/2+Math.cos(t)*canvas.width*.32;
+      b.ty=canvas.height/2+Math.sin(t)*canvas.height*.28;
+      b.x+=(b.tx-b.x)*.025;b.y+=(b.ty-b.y)*.025;
+    },
+    drawExtra(b){
+      ctx.save();ctx.strokeStyle=b.color;ctx.lineWidth=1.5;ctx.globalAlpha=.38;
+      for(let i=0;i<5;i++){
+        const a=(i/5)*Math.PI*2+gameFrame*.012;
+        ctx.beginPath();
+        ctx.moveTo(b.x+Math.cos(a)*b.r*.5,b.y+Math.sin(a)*b.r*.5);
+        ctx.lineTo(b.x+Math.cos(a+.45)*(b.r+14),b.y+Math.sin(a+.45)*(b.r+14));
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  },
+  'NULL-KING':{
+    hp:160,r:68,color:'#cc00ff',pts:7000,
+    sInterval:28,bSpeed:4.2,bCount:8,phase2HP:80,
+    move(b){
+      if(b.phase2&&gameFrame%150===0){
+        const p=edgePos();b.x=p.x;b.y=p.y;
+        ring(b.x,b.y,'#cc00ff',28,10,50);
+        burst(b.x,b.y,'#cc00ff',28,9,40,5,0,'circle');
+      }
+      const a=Math.atan2(player.y-b.y,player.x-b.x);
+      b.x+=Math.cos(a)*(b.phase2?2.2:1.4);
+      b.y+=Math.sin(a)*(b.phase2?2.2:1.4);
+    },
+    drawExtra(b){
+      ctx.save();ctx.strokeStyle=b.color;ctx.lineWidth=1;ctx.globalAlpha=.22;
+      for(let i=0;i<4;i++){
+        const a=gameFrame*.012+i*Math.PI/2,d=b.r+8+i*9;
+        ctx.save();ctx.translate(b.x,b.y);ctx.rotate(a);
+        ctx.strokeRect(-d/2,-d/2,d,d);ctx.restore();
+      }
+      ctx.restore();
+    }
+  },
+  'VOID-MOTHER':{
+    hp:250,r:78,color:'#ff0066',pts:14000,
+    sInterval:20,bSpeed:5.2,bCount:12,phase2HP:125,
+    move(b){
+      const t=gameFrame*.004;
+      b.tx=canvas.width/2+Math.cos(t)*canvas.width*.36;
+      b.ty=canvas.height/2+Math.sin(t*1.4)*canvas.height*.3;
+      b.x+=(b.tx-b.x)*(b.phase2?.055:.028);
+      b.y+=(b.ty-b.y)*(b.phase2?.055:.028);
+    },
+    drawExtra(b){
+      ctx.save();
+      for(let i=0;i<6;i++){
+        const a=gameFrame*.022+i*Math.PI/3;
+        const nx=b.x+Math.cos(a)*(b.r+18),ny=b.y+Math.sin(a)*(b.r+18);
+        ctx.shadowBlur=12;ctx.shadowColor=b.color;
+        ctx.fillStyle=b.color;ctx.globalAlpha=.8;
+        ctx.beginPath();ctx.arc(nx,ny,4,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=.18;ctx.strokeStyle=b.color;ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(nx,ny);ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+};
+
+function spawnBoss(name){
+  const def=BOSS_DEFS[name],p=edgePos();
+  bossActive={
+    name,x:p.x,y:p.y,tx:canvas.width/2,ty:canvas.height/2,
+    hp:def.hp,maxHP:def.hp,r:def.r,color:def.color,pts:def.pts,
+    sInterval:def.sInterval,bSpeed:def.bSpeed,bCount:def.bCount,
+    phase2HP:def.phase2HP,phase2:false,bullets:[],sTimer:0,
+    move:def.move,drawExtra:def.drawExtra,
+  };
+  // Clear field for boss entrance
+  enemies=[];projectiles=projectiles.filter(x=>x.fromPlayer);
+  document.getElementById('bossBar').style.display='block';
+  document.getElementById('bossName').textContent=name;
+  document.getElementById('bossFill').style.width='100%';
+}
+
+function bossShoot(b){
+  const count=b.phase2?b.bCount+4:b.bCount;
+  const spd=b.phase2?b.bSpeed*1.35:b.bSpeed;
+  const off=gameFrame*.035;
+  for(let i=0;i<count;i++){
+    const a=off+(i/count)*Math.PI*2;
+    b.bullets.push({x:b.x,y:b.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:140});
+  }
+  if(b.phase2){
+    const a=Math.atan2(player.y-b.y,player.x-b.x);
+    for(let i=-1;i<=1;i++)
+      b.bullets.push({x:b.x,y:b.y,vx:Math.cos(a+i*.22)*spd*1.1,vy:Math.sin(a+i*.22)*spd*1.1,life:120});
+  }
+}
+
+// ═══ DAMAGE & KILLS ═══════════════════════════
+function hurtPlayer(amt){
+  if(player.inv>0)return;
+  health-=amt;player.inv=75;
+  burst(player.x,player.y,'#ff0066',18,7,28,4,.12,'rect');
+  ring(player.x,player.y,'#ff0066',10,5,22);
+  const v=document.getElementById('vig');
+  v.classList.add('hurt');setTimeout(()=>v.classList.remove('hurt'),200);
+  if(health<=0)doGameOver();
+}
+
+function killEnemy(e,i){
+  kills++;comboCount++;comboTimer=85;
+  const mult=comboCount>=5?2.5:comboCount>=3?1.75:1;
+  score+=Math.round(e.pts*mult);
+  burst(e.x,e.y,e.color,28,8,32,5,.1,'rect');
+  ring(e.x,e.y,e.color,10,6,25);
+  if(e.type==='splitter'){
+    for(let k=0;k<(e.children||3);k++){
+      const a=(k/(e.children||3))*Math.PI*2;
+      const c=mkEnemy('basic');
+      c.x=e.x+Math.cos(a)*35;c.y=e.y+Math.sin(a)*35;c.color='#ff00aa';c.r=9;
+      enemies.push(c);
+    }
+  }
+  enemies.splice(i,1);
+  if(comboCount>=3){
+    const el=document.getElementById('combo');
+    el.textContent=comboCount+'x COMBO';
+    el.classList.add('on');clearTimeout(el._ct);
+    el._ct=setTimeout(()=>el.classList.remove('on'),800);
+  }
+  checkMidLore();
+  checkBossGate();
+}
+
+function killBoss(){
+  const b=bossActive,name=b.name;
+  burst(b.x,b.y,b.color,120,16,80,8,.18,'circle');
+  ring(b.x,b.y,b.color,48,18,90);
+  for(let i=0;i<3;i++) setTimeout(()=>ring(b.x,b.y,b.color,24,12+i*4,60),i*150);
+  score+=b.pts;
+  document.getElementById('bossBar').style.display='none';
+  bossActive=null;
+  gstate='paused';
+  playCinema(BOSS_DEATH[name],()=>{
+    gstate='playing';
+    if(name==='GLITCH-7'){bossesKilled=1;currentPhase=1;flashMsg('FASE DELTA — DESBLOQUEADA');}
+    if(name==='NULL-KING'){bossesKilled=2;currentPhase=2;flashMsg('FASE SIGMA — DESBLOQUEADA');}
+    if(name==='VOID-MOTHER'){bossesKilled=3;doVictory();}
+  });
+}
+
+function checkBossGate(){
+  if(bossActive||cActive)return;
+  if(bossesKilled===0&&kills>=60){
+    bossesKilled=-1;gstate='paused';
+    playCinema(BOSS_CONVOS['GLITCH-7'],()=>{gstate='playing';spawnBoss('GLITCH-7');});
+  } else if(bossesKilled===1&&kills>=140){
+    bossesKilled=-2;gstate='paused';
+    playCinema(BOSS_CONVOS['NULL-KING'],()=>{gstate='playing';spawnBoss('NULL-KING');});
+  } else if(bossesKilled===2&&kills>=250){
+    bossesKilled=-3;gstate='paused';
+    playCinema(BOSS_CONVOS['VOID-MOTHER'],()=>{gstate='playing';spawnBoss('VOID-MOTHER');});
+  }
+}
+
+function checkMidLore(){
+  if(midLoreIdx<MIDLORE.length&&kills>=MIDLORE[midLoreIdx].kills){
+    const ev=MIDLORE[midLoreIdx++];
+    showToast(ev.who,ev.text);
+  }
+}
+
+// ═══ UPDATE ═══════════════════════════════════
+function update(){
+  gameFrame++;
+  if(shootCD>0)shootCD--;
+
+  let dx=0,dy=0;
+  if(keys['ArrowUp']   ||keys['w']||keys['W'])dy-=1;
+  if(keys['ArrowDown'] ||keys['s']||keys['S'])dy+=1;
+  if(keys['ArrowLeft'] ||keys['a']||keys['A'])dx-=1;
+  if(keys['ArrowRight']||keys['d']||keys['D'])dx+=1;
+  if(dx&&dy){dx*=.707;dy*=.707;}
+  const spd=(keys['Shift']?1.85:1)*player.speed;
+  player.x=Math.max(20,Math.min(canvas.width-20, player.x+dx*spd));
+  player.y=Math.max(20,Math.min(canvas.height-20,player.y+dy*spd));
+  if(player.inv>0)player.inv--;
+  if(mouse.down&&shootCD<=0)shoot(mouse.x,mouse.y);
+
+  // Projectiles
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];
+    p.x+=p.vx;p.y+=p.vy;p.life--;
+    if(p.life<=0||p.x<-60||p.x>canvas.width+60||p.y<-60||p.y>canvas.height+60)
+      projectiles.splice(i,1);
+  }
+
+  // Spawn (only if no boss)
+  if(!bossActive){spawnTimer++;if(spawnTimer>=spawnRate){spawnTimer=0;spawnWave();}}
+
+  // Enemies
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    if(e.type==='sniper'){
+      const a=Math.atan2(player.y-e.y,player.x-e.x);
+      e.x-=Math.cos(a)*.4;e.y-=Math.sin(a)*.4;
+      e.sTimer--;
+      if(e.sTimer<=0){
+        e.sTimer=90+Math.random()*50|0;
+        const ea=Math.atan2(player.y-e.y,player.x-e.x);
+        projectiles.push({x:e.x,y:e.y,vx:Math.cos(ea)*7,vy:Math.sin(ea)*7,life:130,r:4,fromPlayer:false});
+      }
+    } else {
+      const a=Math.atan2(player.y-e.y,player.x-e.x);
+      e.x+=Math.cos(a)*e.speed;e.y+=Math.sin(a)*e.speed;
+    }
+    // Hit by player bullet
+    let killed=false;
+    for(let j=projectiles.length-1;j>=0;j--){
+      const p=projectiles[j];if(!p.fromPlayer)continue;
+      if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+p.r){
+        projectiles.splice(j,1);
+        if(e.shielded&&currentPhase<1){burst(p.x,p.y,'#44ffcc',6,4,18,3,0,'circle');continue;}
+        e.hp--;burst(p.x,p.y,'#ffee00',5,4,16,3,0);
+        if(e.hp<=0){killEnemy(e,i);killed=true;break;}
+      }
+    }
+    if(killed)continue;
+    // Touch player
+    if(player.inv<=0&&Math.hypot(e.x-player.x,e.y-player.y)<e.r+player.r){
+      hurtPlayer(e.type==='tank'?30:e.type==='sniper'?16:22);
+      if(e.type!=='tank')enemies.splice(i,1);
+    }
+  }
+
+  // Enemy bullets hit player
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];if(p.fromPlayer)continue;
+    if(player.inv<=0&&Math.hypot(p.x-player.x,p.y-player.y)<player.r+p.r){
+      projectiles.splice(i,1);hurtPlayer(20);
+    }
+  }
+
+  // Boss
+  if(bossActive){
+    bossActive.move(bossActive);
+    bossActive.sTimer++;
+    if(bossActive.sTimer>=bossActive.sInterval){bossActive.sTimer=0;bossShoot(bossActive);}
+    if(!bossActive.phase2&&bossActive.hp<=bossActive.phase2HP){
+      bossActive.phase2=true;
+      ring(bossActive.x,bossActive.y,bossActive.color,40,14,70);
+      burst(bossActive.x,bossActive.y,bossActive.color,60,12,55,6,.2,'circle');
+      flashMsg('FASE 2 — ' + bossActive.name);
+    }
+    // Boss bullets
+    for(let i=bossActive.bullets.length-1;i>=0;i--){
+      const b=bossActive.bullets[i];
+      b.x+=b.vx;b.y+=b.vy;b.life--;
+      if(b.life<=0){bossActive.bullets.splice(i,1);continue;}
+      if(player.inv<=0&&Math.hypot(b.x-player.x,b.y-player.y)<player.r+5){
+        bossActive.bullets.splice(i,1);hurtPlayer(14);
+      }
+    }
+    // Hit boss
+    for(let j=projectiles.length-1;j>=0;j--){
+      const p=projectiles[j];if(!p.fromPlayer)continue;
+      if(Math.hypot(p.x-bossActive.x,p.y-bossActive.y)<bossActive.r+p.r){
+        projectiles.splice(j,1);
+        bossActive.hp--;burst(p.x,p.y,'#ffffff',6,5,18,4,0);
+        if(bossActive.hp<=0){killBoss();return;}
+      }
+    }
+    // Boss touches player
+    if(player.inv<=0&&Math.hypot(bossActive.x-player.x,bossActive.y-player.y)<bossActive.r+player.r)
+      hurtPlayer(38);
+    document.getElementById('bossFill').style.width=(bossActive.hp/bossActive.maxHP*100)+'%';
+  }
+
+  // Particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=p.grav;p.life--;p.size*=.96;
+    if(p.life<=0)particles.splice(i,1);
+  }
+
+  if(comboTimer>0){comboTimer--;if(comboTimer===0)comboCount=0;}
+
+  const nl=1+Math.floor(kills/14);
+  if(nl>level){level=nl;spawnRate=Math.max(55,180-level*9);flashMsg('NIVEL '+level);}
+
+  updateHUD();
+}
+
+// ═══ DRAW ═════════════════════════════════════
+function hexPath(x,y,r,rot=0){
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a=rot+i*Math.PI/3;
+    i===0?ctx.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r):ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
+  }
+  ctx.closePath();
+}
+
+function draw(){
+  ctx.fillStyle='rgba(5,8,16,.2)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='rgba(0,255,157,.035)';ctx.lineWidth=1;
+  const gs=65;
+  for(let x=0;x<canvas.width;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+  for(let y=0;y<canvas.height;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+
+  // Particles
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life/p.maxLife);
+    ctx.fillStyle=p.color;
+    if(p.shape==='circle'){ctx.beginPath();ctx.arc(p.x,p.y,Math.max(.5,p.size/2),0,Math.PI*2);ctx.fill();}
+    else ctx.fillRect(p.x,p.y,Math.max(.5,p.size),Math.max(.5,p.size));
+  }
+  ctx.globalAlpha=1;
+
+  // Player (flickering when invincible)
+  if(!(player.inv>0&&Math.floor(gameFrame/4)%2)){
+    ctx.save();ctx.shadowBlur=30;ctx.shadowColor='#00ff9d';
+    ctx.strokeStyle='#00ff9d';ctx.lineWidth=2.5;
+    hexPath(player.x,player.y,player.r,gameFrame*.018);ctx.stroke();
+    ctx.fillStyle='rgba(0,255,157,.5)';
+    ctx.beginPath();ctx.arc(player.x,player.y,4.5,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.22;ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(player.x,player.y,player.r+9,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=1;ctx.restore();
+  }
+
+  // Crosshair
+  ctx.save();ctx.strokeStyle='rgba(0,238,255,.7)';ctx.lineWidth=1.5;ctx.shadowBlur=8;ctx.shadowColor='#00eeff';
+  const cx=mouse.x,cy=mouse.y,cs=9,cg=5;
+  ctx.beginPath();ctx.moveTo(cx-cs-cg,cy);ctx.lineTo(cx-cg,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+cg,cy);ctx.lineTo(cx+cs+cg,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-cs-cg);ctx.lineTo(cx,cy-cg);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy+cg);ctx.lineTo(cx,cy+cs+cg);ctx.stroke();
+  ctx.restore();
+
+  // Bullets
+  for(const p of projectiles){
+    ctx.save();
+    if(p.fromPlayer){ctx.shadowBlur=20;ctx.shadowColor='#ff00ff';ctx.fillStyle='#ff00ff';}
+    else{ctx.shadowBlur=14;ctx.shadowColor='#ff6600';ctx.fillStyle='#ff8800';}
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+
+  // Enemies
+  for(const e of enemies){
+    ctx.save();ctx.shadowBlur=22;ctx.shadowColor=e.color;ctx.strokeStyle=e.color;ctx.lineWidth=2.5;
+    switch(e.type){
+      case 'tank':
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=.22;ctx.fillStyle=e.color;ctx.fill();ctx.globalAlpha=1;
+        ctx.lineWidth=1;ctx.globalAlpha=.3;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=1;break;
+      case 'sniper':
+        ctx.beginPath();
+        ctx.moveTo(e.x,e.y-e.r);ctx.lineTo(e.x+e.r,e.y);ctx.lineTo(e.x,e.y+e.r);ctx.lineTo(e.x-e.r,e.y);
+        ctx.closePath();ctx.stroke();break;
+      case 'splitter':
+        ctx.beginPath();
+        for(let k=0;k<3;k++){const a=k*Math.PI*2/3-Math.PI/2;
+          k===0?ctx.moveTo(e.x+Math.cos(a)*e.r,e.y+Math.sin(a)*e.r):ctx.lineTo(e.x+Math.cos(a)*e.r,e.y+Math.sin(a)*e.r);}
+        ctx.closePath();ctx.stroke();break;
+      case 'shield':
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+        ctx.lineWidth=5;ctx.globalAlpha=.35;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+7,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=1;break;
+      case 'fast':
+        ctx.save();ctx.translate(e.x,e.y);ctx.rotate(gameFrame*.07);
+        ctx.beginPath();for(let k=0;k<4;k++){const a=k*Math.PI/2;
+          k===0?ctx.moveTo(Math.cos(a)*e.r,Math.sin(a)*e.r):ctx.lineTo(Math.cos(a)*e.r,Math.sin(a)*e.r);}
+        ctx.closePath();ctx.stroke();ctx.restore();break;
+      default:
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.stroke();
+    }
+    if(e.maxHP>1){
+      const bw=e.r*2,bx=e.x-e.r,by=e.y-e.r-13;
+      ctx.fillStyle='#0a0010';ctx.fillRect(bx,by,bw,4);
+      ctx.fillStyle=e.color;ctx.shadowBlur=6;
+      ctx.fillRect(bx,by,bw*(e.hp/e.maxHP),4);
+    }
+    ctx.restore();
+  }
+
+  // Boss
+  if(bossActive){
+    const b=bossActive,pulse=.8+Math.sin(gameFrame*.09)*.2;
+    ctx.save();ctx.shadowBlur=65*pulse;ctx.shadowColor=b.color;ctx.strokeStyle=b.color;ctx.lineWidth=3.5;
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.stroke();
+    if(b.phase2){ctx.globalAlpha=.42;ctx.lineWidth=9;ctx.beginPath();ctx.arc(b.x,b.y,b.r+18,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+    ctx.globalAlpha=.12;ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle=b.color;ctx.lineWidth=1.5;ctx.globalAlpha=.55;
+    hexPath(b.x,b.y,b.r*.5,gameFrame*.025);ctx.stroke();ctx.globalAlpha=1;
+    b.drawExtra(b);
+    ctx.font='bold 12px Orbitron,monospace';ctx.fillStyle=b.color;
+    ctx.textAlign='center';ctx.shadowBlur=14;ctx.shadowColor=b.color;
+    ctx.fillText(b.name,b.x,b.y-b.r-17);
+    ctx.restore();
+    for(const bl of b.bullets){
+      ctx.save();ctx.shadowBlur=14;ctx.shadowColor=b.color;
+      ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(bl.x,bl.y,5.5,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+  }
+}
+
+// ═══ HUD & FX ═════════════════════════════════
+function updateHUD(){
+  document.getElementById('hLvl').textContent=level;
+  document.getElementById('hKills').textContent=kills;
+  document.getElementById('hScore').textContent=score;
+  document.getElementById('hPhase').textContent=PHASES[currentPhase]||'NEXUS';
+  const pct=Math.max(0,health/100)*100,f=document.getElementById('hpFill');
+  f.style.width=pct+'%';
+  f.style.background=pct>50?'linear-gradient(90deg,var(--p),var(--g))':pct>25?'linear-gradient(90deg,var(--p),var(--y))':'var(--p)';
+  f.style.boxShadow=`0 0 8px ${pct>50?'var(--g)':pct>25?'var(--y)':'var(--p)'}`;
+}
+function flashMsg(msg){
+  const el=document.getElementById('flash'),t=document.getElementById('flashTxt');
+  t.textContent=msg;el.classList.add('on');clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('on'),1400);
+}
+function doGameOver(){
+  gstate='gameover';
+  document.getElementById('endTitle').textContent='SISTEMA COMPROMETIDO';
+  document.getElementById('endTitle').style.color='var(--p)';
+  document.getElementById('endMsg').textContent='Tu venganza quedó incompleta... Los errores proliferan. Pero ZERO-9 puede recompilarse.';
+  document.getElementById('endScore').textContent='PUNTOS FINALES: '+score;
+  document.getElementById('end').style.display='flex';
+}
+function doVictory(){
+  gstate='victory';
+  document.getElementById('endTitle').textContent='VENGANZA CUMPLIDA';
+  document.getElementById('endTitle').style.color='var(--g)';
+  document.getElementById('endMsg').textContent='VOID-MOTHER eliminada. El código del universo puede sanar. ZERO-9 queda solo en el núcleo — el último proceso en pie.';
+  document.getElementById('endScore').textContent='PUNTOS FINALES: '+score;
+  document.getElementById('end').style.display='flex';
+}
+
+// ═══ LOOP ═════════════════════════════════════
+function loop(){
+  // gstate === 'playing': update & draw
+  // gstate === 'paused':  only draw (game frozen, cinema visible)
+  // gstate === 'title' | 'gameover' | 'victory': nothing
+  if(gstate==='playing') update();
+  if(gstate==='playing'||gstate==='paused') draw();
+  requestAnimationFrame(loop);
+}
+
+// ═══ WIRING ═══════════════════════════════════
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('title').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('ctrls').style.display='block';
+  resetGame();
+  gstate='paused';
+  playCinema([
+    {who:'zero',shape:'zero',text:'Año 2097. El núcleo digital está corrupto. Todos los procesos de mi familia han sido borrados.'},
+    {who:'zero',shape:'zero',text:'Solo yo sobreviví. VOID-MOTHER lo hizo. Y yo seré su fin.'},
+    {who:'sys', shape:'sys', text:'[SISTEMA] Protocolo de venganza activado. ZERO-9 online. Tienes tres núcleos que destruir antes de llegar a ella. Suerte.'},
+  ],()=>{
+    gstate='playing';
+    for(let i=0;i<3;i++) setTimeout(()=>{if(enemies.length<4)enemies.push(mkEnemy('basic'));},i*700);
+  });
+};
+
+document.getElementById('restartBtn').onclick=()=>{
+  document.getElementById('end').style.display='none';
+  document.getElementById('cinema').classList.remove('show');
+  cActive=false;cQueue=[];clearInterval(cTypeIv);
+  resetGame();gstate='playing';
+};
+
+resetGame();loop();
+</script>
+</body>
+</html>
+
