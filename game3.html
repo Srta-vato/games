@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Syscolegios - Daemon Core Analyzer v4.5</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --player: #ff7b72;
+            --bot: #58a6ff;
+            --cursor: rgba(210, 168, 255, 0.15);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 15px;
+            font-size: 13px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            gap: 15px;
+            height: calc(100vh - 40px);
+        }
+
+        .panel {
+            background-color: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            color: var(--bot);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .code-stub { color: #7ee787; white-space: pre; line-height: 1.4; font-size: 11px; }
+        .log-output { flex-grow: 1; overflow-y: auto; color: #8b949e; font-size: 11px; line-height: 1.5; }
+
+        /* TABLERO FIJO - CORREGIDO PARA EVITAR DESPLAZAMIENTOS */
+        .center-panel { 
+            align-items: center; 
+            justify-content: flex-start; 
+            overflow-y: auto;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 42px);
+            grid-template-rows: repeat(7, 42px);
+            gap: 6px;
+            background-color: #0d1117;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .cell {
+            background-color: #21262d;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #2d333b; /* ID de memoria falso semi-oculto */
+            position: relative;
+            box-sizing: border-box;
+            /* Base rígida: pre-asignamos espacio de bordes para evitar que el grid crezca */
+            border-bottom: 4px solid transparent;
+            border-right: 4px solid transparent;
+        }
+
+        /* Fichas Corporativas */
+        .token-p { color: var(--player); font-size: 15px; text-shadow: 0 0 5px var(--player); }
+        .token-e { color: var(--bot); font-size: 15px; text-shadow: 0 0 5px var(--bot); }
+
+        /* Muros dinámicos por colores sin alterar dimensiones */
+        .wall-b-player { border-bottom-color: var(--player) !important; }
+        .wall-b-bot { border-bottom-color: var(--bot) !important; }
+        
+        .wall-r-player { border-right-color: var(--player) !important; }
+        .wall-r-bot { border-right-color: var(--bot) !important; }
+
+        /* Cursor de apuntado (Modo Muro) */
+        .cursor-active {
+            background-color: var(--cursor) !important;
+            box-shadow: inset 0 0 0 1px var(--player);
+        }
+
+        .instructions {
+            background-color: #0d1117;
+            border: 1px solid var(--border);
+            padding: 10px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--muted);
+            width: 100%;
+            box-sizing: border-box;
+            line-height: 1.4;
+        }
+
+        .instructions span { color: var(--player); font-weight: bold; }
+        .instructions kbd { background: #21262d; padding: 1px 4px; border-radius: 3px; border: 1px solid #484f58; color: #c9d1d9;}
+    </style>
+</head>
+<body>
+
+    <div class="layout">
+        <div class="panel">
+            <div class="panel-header"><span>📄 Stream: cleanup_buffer.php</span></div>
+            <div class="code-stub">
+function clearPDFCache() {
+    $files = glob('../actas/consumibles_*.pdf');
+    foreach ($files as $f) {
+        if (filemtime($f) < time() - 300) {
+            @unlink($f); // Auto-delete after 5m
+        }
+    }
+}
+
+class GridOptimizer {
+    public function routeNodes() {
+        $this->validatePath();
+        $this->injectFirewall();
+    }
+}</div>
+        </div>
+
+        <div class="panel center-panel">
+            <div class="panel-header" style="width: 100%;"><span>📊 Matrix Routing Node (7x7 Array)</span> <span id="mode-badge" style="color:#56d364">MODO: MOVER</span></div>
+            
+            <div class="instructions">
+                • <b>MODO MOVER:</b> Usa las <kbd>Flechas</kbd> para desplazar tu proceso <span style="color:var(--player)">[P]</span>.<br>
+                • <b>MODO MURO:</b> Presiona <kbd>ESPACIO</kbd> para activar cursor. Elige celda con flechas y pulsa <kbd>H</kbd> (Muro Abajo <span style="color:var(--player)">■</span>) o <kbd>V</kbd> (Muro Derecha <span style="color:var(--player)">■</span>).
+            </div>
+
+            <div class="grid" id="board"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><span>💻 Terminal Engine Output</span></div>
+            <div class="log-output" id="logs">
+                [SYSTEM] Array 7x7 matrix loaded successfully.<br>
+                [INFO] Anti-shifting layout patch v4.5 applied.<br>
+                [READY] Multi-thread tracking execution loop ready...<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SIZE = 7;
+        let pPos = { r: 0, c: 3 }; 
+        let bPos = { r: 6, c: 3 }; 
+        
+        // Ahora guardan strings ('player', 'bot') o null para identificar el dueño del muro
+        let hWalls = Array(SIZE-1).fill().map(() => Array(SIZE).fill(null)); 
+        let vWalls = Array(SIZE).fill().map(() => Array(SIZE-1).fill(null)); 
+
+        let isWallMode = false;
+        let cursor = { r: 3, c: 3 }; 
+
+        const board = document.getElementById('board');
+        const logs = document.getElementById('logs');
+        const modeBadge = document.getElementById('mode-badge');
+
+        function logMsg(msg, color="#8b949e") {
+            logs.innerHTML += `<span style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function render() {
+            board.innerHTML = '';
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.innerText = `0x${r}${c}`;
+
+                    if (r === pPos.r && c === pPos.c) {
+                        cell.innerHTML = '<span class="token-p">[P]</span>';
+                    } else if (r === bPos.r && c === bPos.c) {
+                        cell.innerHTML = '<span class="token-e">[E]</span>';
+                    }
+
+                    // Renderizado de muros por colores según pertenencia
+                    if (r < SIZE - 1 && hWalls[r][c] !== null) {
+                        cell.classList.add(hWalls[r][c] === 'player' ? 'wall-b-player' : 'wall-b-bot');
+                    }
+                    if (c < SIZE - 1 && vWalls[r][c] !== null) {
+                        cell.classList.add(vWalls[r][c] === 'player' ? 'wall-r-player' : 'wall-r-bot');
+                    }
+
+                    if (isWallMode && r === cursor.r && c === cursor.c) {
+                        cell.classList.add('cursor-active');
+                    }
+
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function canMove(from, to) {
+            const dr = to.r - from.r;
+            const dc = to.c - from.c;
+            
+            if (to.r < 0 || to.r >= SIZE || to.c < 0 || to.c >= SIZE) return false;
+            if (Math.abs(dr) + Math.abs(dc) !== 1) return false;
+
+            if (dr === 1) return hWalls[from.r][from.c] === null;
+            if (dr === -1) return hWalls[to.r][to.c] === null;
+            if (dc === 1) return vWalls[from.r][from.c] === null;
+            if (dc === -1) return vWalls[to.r][to.c] === null;
+
+            return true;
+        }
+
+        function getPath(start, targetRow) {
+            let queue = [ [start] ];
+            let visited = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
+            visited[start.r][start.c] = true;
+
+            while(queue.length > 0) {
+                let path = queue.shift();
+                let curr = path[path.length - 1];
+
+                if (curr.r === targetRow) return path;
+
+                const dirs = [{r:curr.r+1,c:curr.c}, {r:curr.r-1,c:curr.c}, {r:curr.r,c:curr.c+1}, {r:curr.r,c:curr.c-1}];
+                for (let d of dirs) {
+                    if (d.r >= 0 && d.r < SIZE && d.c >= 0 && d.c < SIZE) {
+                        if (!visited[d.r][d.c] && canMove(curr, d)) {
+                            visited[d.r][d.c] = true;
+                            queue.push([...path, d]);
+                        }
+                    }
+                }
+            }
+            return null; 
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === ' ') {
+                e.preventDefault();
+                isWallMode = !isWallMode;
+                modeBadge.innerText = isWallMode ? "MODO: INYECTAR MURO" : "MODO: MOVER PROCESO";
+                modeBadge.style.color = isWallMode ? "#d2a8ff" : "#56d364";
+                render();
+                return;
+            }
+
+            if (!isWallMode) {
+                let next = { r: pPos.r, c: pPos.c };
+                if (e.key === 'ArrowUp') next.r--;
+                else if (e.key === 'ArrowDown') next.r++;
+                else if (e.key === 'ArrowLeft') next.c--;
+                else if (e.key === 'ArrowRight') next.c++;
+                else return;
+
+                if (canMove(pPos, next)) {
+                    pPos = next;
+                    logMsg(`Proceso [P] desplazado a 0x${pPos.r}${pPos.c}`, "#c9d1d9");
+                    checkWin();
+                } else {
+                    logMsg(`Interceptado: Muro detectado en dirección a 0x${next.r}${next.c}`, "#ff7b72");
+                }
+            } else {
+                e.preventDefault();
+                if (e.key === 'ArrowUp' && cursor.r > 0) cursor.r--;
+                else if (e.key === 'ArrowDown' && cursor.r < SIZE-1) cursor.r++;
+                else if (e.key === 'ArrowLeft' && cursor.c > 0) cursor.c--;
+                else if (e.key === 'ArrowRight' && cursor.c < SIZE-1) cursor.c++;
+                
+                else if (e.key.toLowerCase() === 'h') tryWall(cursor.r, cursor.c, 'h');
+                else if (e.key.toLowerCase() === 'v') tryWall(cursor.r, cursor.c, 'v');
+                
+                render();
+            }
+        });
+
+        function tryWall(r, c, type) {
+            let success = false;
+            if (type === 'h' && r < SIZE-1 && hWalls[r][c] === null) {
+                hWalls[r][c] = 'player';
+                if (!getPath(pPos, SIZE-1) || !getPath(bPos, 0)) {
+                    hWalls[r][c] = null; 
+                    logMsg(`[RECHAZADO] Restricción de Aislamiento: Ruta crítica bloqueada.`, "#ffa657");
+                } else success = true;
+            } else if (type === 'v' && c < SIZE-1 && vWalls[r][c] === null) {
+                vWalls[r][c] = 'player';
+                if (!getPath(pPos, SIZE-1) || !getPath(bPos, 0)) {
+                    vWalls[r][c] = null;
+                    logMsg(`[RECHAZADO] Restricción de Aislamiento: Ruta crítica bloqueada.`, "#ffa657");
+                } else success = true;
+            }
+
+            if (success) {
+                logMsg(`Firewall de usuario inyectado en 0x${r}${c} (${type.toUpperCase()})`, "#ff7b72");
+                isWallMode = false;
+                modeBadge.innerText = "MODO: MOVER PROCESO";
+                modeBadge.style.color = "#56d364";
+                render();
+                setTimeout(botAI, 150); 
+            }
+        }
+
+        function checkWin() {
+            render();
+            if (pPos.r === SIZE - 1) {
+                setTimeout(() => { alert("¡PROCESO EXITOSO! El nodo del usuario completó el ruteo."); reset(); }, 100);
+            } else {
+                setTimeout(botAI, 150);
+            }
+        }
+
+        function botAI() {
+            let pPath = getPath(pPos, SIZE-1);
+            let bPath = getPath(bPos, 0);
+
+            if (!pPath || !bPath) return;
+
+            // Estrategia reactiva: Bloquear al jugador si va ganando ventaja
+            if (pPath.length <= bPath.length && pPath.length > 1) {
+                let blockNode = pPath[1]; 
+                let dr = blockNode.r - pPos.r;
+                let dc = blockNode.c - pPos.c;
+
+                let blocked = false;
+                if (dr === 1 && pPos.r < SIZE - 1 && hWalls[pPos.r][pPos.c] === null) {
+                    hWalls[pPos.r][pPos.c] = 'bot';
+                    if (getPath(pPos, SIZE-1) && getPath(bPos, 0)) blocked = true;
+                    else hWalls[pPos.r][pPos.c] = null;
+                }
+                if (!blocked && dc === 1 && pPos.c < SIZE - 1 && vWalls[pPos.r][pPos.c] === null) {
+                    vWalls[pPos.r][pPos.c] = 'bot';
+                    if (getPath(pPos, SIZE-1) && getPath(bPos, 0)) blocked = true;
+                    else vWalls[pPos.r][pPos.c] = null;
+                }
+
+                if (blocked) {
+                    logMsg(`[AI ENGINE] Bloqueo táctico inyectado por el sistema de seguridad.`, "#58a6ff");
+                    render();
+                    return; 
+                }
+            }
+
+            if (bPath && bPath.length > 1) {
+                bPos = bPath[1];
+                logMsg(`Engine [E] avanzó segmento a 0x${bPos.r}${bPos.c}`, "#58a6ff");
+            }
+
+            render();
+            if (bPos.r === 0) {
+                setTimeout(() => { alert("DETENCIÓN CRÍTICA: La IA optimizó la matriz primero."); reset(); }, 100);
+            }
+        }
+
+        function reset() {
+            pPos = { r: 0, c: 3 }; bPos = { r: 6, c: 3 };
+            hWalls = Array(SIZE-1).fill().map(() => Array(SIZE).fill(null));
+            vWalls = Array(SIZE).fill().map(() => Array(SIZE-1).fill(null));
+            isWallMode = false;
+            logMsg(`[SYSTEM] Hilo de ejecución reiniciado. Memoria limpia.`, "#8b949e");
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>
