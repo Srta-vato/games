@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Syscolegios — MATRIX CORE v7.0</title>
+    <style>
+        :root {
+            --bg: #0d1117; --panel: #161b22; --border: #30363d;
+            --text: #c9d1d9; --muted: #8b949e;
+            --player: #ff7b72; --bot: #58a6ff; --cursor: rgba(210,168,255,0.15);
+            --accent: #56d364;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'Courier New', monospace; margin: 0; padding: 10px;
+            font-size: 13px; height: 100vh; overflow: hidden;
+            user-select: none; transition: background 1.2s, color 1s;
+        }
+        .layout {
+            display: grid; grid-template-columns: 290px 1fr 310px;
+            gap: 12px; height: calc(100vh - 25px);
+        }
+        .panel {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 6px; padding: 12px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .panel-header {
+            border-bottom: 1px solid var(--border); padding-bottom: 8px;
+            margin-bottom: 10px; color: var(--bot); font-weight: bold;
+            display: flex; justify-content: space-between; font-size: 11px;
+            flex-wrap: wrap; gap: 4px;
+        }
+        .code-stub { color: #7ee787; white-space: pre; line-height: 1.4; font-size: 10px; flex: 1; overflow: hidden; }
+        .log-output { flex: 1; overflow-y: auto; color: #8b949e; font-size: 10px; line-height: 1.6; }
+        .center-panel { align-items: center; justify-content: flex-start; }
+        .grid {
+            display: grid; grid-template-columns: repeat(7, 42px);
+            grid-template-rows: repeat(7, 42px); gap: 5px;
+            background: #0d1117; padding: 8px;
+            border: 1px solid var(--border); border-radius: 4px;
+        }
+        .cell {
+            background: #21262d; border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #2d333b; position: relative;
+            border-bottom: 4px solid transparent; border-right: 4px solid transparent;
+            font-size: 11px;
+        }
+        .token-p { color: var(--player); font-size: 14px; text-shadow: 0 0 8px var(--player); animation: pulse-p 1s infinite alternate; }
+        .token-e { color: var(--bot); font-size: 14px; text-shadow: 0 0 8px var(--bot); }
+        @keyframes pulse-p { from { opacity: 1; } to { opacity: 0.7; } }
+        .wall-b-player { border-bottom-color: var(--player) !important; }
+        .wall-b-bot    { border-bottom-color: var(--bot) !important; }
+        .wall-r-player { border-right-color: var(--player) !important; }
+        .wall-r-bot    { border-right-color: var(--bot) !important; }
+        .cursor-active { background: var(--cursor) !important; box-shadow: inset 0 0 0 1px var(--player); }
+
+        .instructions {
+            background: #0d1117; border: 1px solid var(--border);
+            padding: 8px; margin-bottom: 8px; border-radius: 4px;
+            font-size: 10px; color: var(--muted); width: 100%;
+        }
+
+        /* BARRA DE HABILIDADES */
+        #abilities-section {
+            width: 100%; margin-bottom: 8px;
+        }
+        #abilities-bar {
+            display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .abil-btn {
+            background: #21262d; border: 1px solid var(--border);
+            color: var(--accent); font-family: monospace; font-size: 10px;
+            padding: 4px 10px; border-radius: 3px; cursor: pointer;
+            transition: all 0.2s; position: relative;
+        }
+        .abil-btn:hover:not(.locked) { background: #2d3a2d; border-color: var(--accent); }
+        .abil-btn.locked {
+            opacity: 0.25; color: #555; cursor: not-allowed;
+            border-color: #333; filter: grayscale(1);
+        }
+        .abil-btn .charges {
+            font-size: 9px; color: #56d364; margin-left: 4px;
+        }
+        .abil-btn.zero-charges { opacity: 0.45; color: #888; }
+
+        /* NOTIFICACION DE HABILIDAD NUEVA */
+        #unlock-banner {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #0d2b0d; border: 2px solid #56d364; color: #56d364;
+            font-family: monospace; font-size: 14px; font-weight: bold;
+            padding: 12px 24px; border-radius: 6px; z-index: 5000;
+            opacity: 0; pointer-events: none;
+            text-align: center; box-shadow: 0 0 20px rgba(86,211,100,0.4);
+        }
+        #unlock-banner.show { animation: banner-pop 3s ease-out forwards; }
+        @keyframes banner-pop {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            75% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* GLITCH OVERLAY */
+        #glitch-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            pointer-events: none; opacity: 0; background: #000;
+        }
+        #glitch-overlay.show-scare { animation: scare-flash 0.95s ease-out forwards; }
+        #scare-text {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            z-index: 10000; color: #ff0033; font-family: monospace;
+            font-size: 48px; font-weight: bold; text-align: center;
+            opacity: 0; pointer-events: none; text-shadow: 0 0 30px #ff0033;
+            letter-spacing: 4px;
+        }
+        #scare-text.show { animation: scare-text-flash 0.95s ease-out forwards; }
+        @keyframes scare-flash {
+            0%  {opacity:0;background:#000}
+            8%  {opacity:0.97;background:#ff0000}
+            20% {opacity:0.80;background:#000}
+            38% {opacity:0.90;background:#ff0033}
+            60% {opacity:0.65;background:#000}
+            100%{opacity:0;background:#000}
+        }
+        @keyframes scare-text-flash {
+            0%   {opacity:0;transform:translate(-50%,-50%) scale(0.2) rotate(-5deg)}
+            15%  {opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(1deg)}
+            50%  {opacity:1;transform:translate(-50%,-50%) scale(1.0) rotate(0)}
+            85%  {opacity:1}
+            100% {opacity:0;transform:translate(-50%,-50%) scale(0.9)}
+        }
+
+        /* TUTORIAL MODAL */
+        #tutorial-modal {
+            display: none; position: fixed; inset: 0; z-index: 8000;
+            background: rgba(0,0,0,0.82); align-items: center; justify-content: center;
+        }
+        #tutorial-modal.show { display: flex; animation: tut-in .25s ease-out; }
+        @keyframes tut-in { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+        #tutorial-box {
+            background: #0d1117; border: 2px solid #56d364;
+            border-radius: 8px; padding: 28px 32px; max-width: 430px; width: 90%;
+            font-family: 'Courier New', monospace; color: #c9d1d9;
+            box-shadow: 0 0 40px rgba(86,211,100,0.25);
+        }
+        #tutorial-box h2 { color: #56d364; margin: 0 0 4px; font-size: 17px; }
+        #tutorial-box .tut-sub { color: #8b949e; font-size: 10px; margin-bottom: 14px; letter-spacing:1px; }
+        #tutorial-box .tut-body { font-size: 12px; line-height: 1.9; margin-bottom: 18px; }
+        .tut-key {
+            display: inline-block; background: #21262d; border: 1px solid #56d364;
+            border-radius: 3px; padding: 0 7px; font-weight: bold; color: #56d364; font-size: 11px;
+        }
+        .tut-example {
+            background: #161b22; border-left: 3px solid #56d364;
+            padding: 7px 11px; margin: 8px 0; font-size: 10px; color: #8b949e;
+            border-radius: 0 4px 4px 0;
+        }
+        #tutorial-btn {
+            background: #56d364; color: #0d1117; border: none;
+            font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold;
+            padding: 9px 24px; border-radius: 4px; cursor: pointer; width: 100%;
+            letter-spacing: 1px;
+        }
+        #tutorial-btn:hover { background: #3fb950; }
+
+        /* BSOD FINAL */
+        #bsod {
+            display: none; position: fixed; inset: 0; z-index: 99999;
+            background: #0000aa; color: #fff;
+            font-family: 'Courier New', monospace;
+            align-items: center; justify-content: center;
+            flex-direction: column; text-align: center; padding: 60px;
+        }
+        #bsod.show { display: flex; animation: bsod-in 0.3s ease-out; }
+        @keyframes bsod-in { from{opacity:0} to{opacity:1} }
+        #bsod h1 { font-size: 32px; margin-bottom: 16px; }
+        #bsod p { font-size: 14px; max-width: 580px; line-height: 2; }
+        #bsod .err { color: #ffff00; font-size: 18px; margin: 16px 0; }
+        #bsod .sub { color: #aaaaff; font-size: 11px; margin-top: 30px; }
+        #bsod-bar { margin: 20px 0; font-size: 16px; letter-spacing: 2px; }
+
+        /* FASES VISUALES */
+        @keyframes flicker2  { 0%,100%{opacity:1} 50%{opacity:0.96} }
+        @keyframes redshake  { 0%{transform:translate(0,0)} 33%{transform:translate(-1px,1px)} 66%{transform:translate(1px,-1px)} 100%{transform:translate(0,0)} }
+        @keyframes chaosshk  { 0%{transform:translate(0,0)rotate(0)} 25%{transform:translate(-2px,2px)rotate(.3deg)} 75%{transform:translate(2px,-2px)rotate(-.3deg)} 100%{transform:translate(0,0)} }
+
+        body.phase-2 { --bg:#0b0707; --panel:#140d0d; --border:#3d1616; --text:#a89999; --bot:#9e58ff; animation:flicker2 4s infinite; }
+        body.phase-3 { --bg:#000; --panel:#050505; --border:#222; --text:#888; --player:#ff3333; --bot:#ff0055; }
+        body.phase-3 .grid { animation:redshake .4s infinite; border-color:#ff0055 !important; }
+        body.phase-4 { --bg:#000; --panel:#020202; --border:#ff0000; --text:#ff4444; --player:#ff0000; --bot:#ff00ff; }
+        body.phase-4 .grid { animation:chaosshk .2s infinite; border-color:#ff0000 !important; }
+        body.phase-4 .cell { background:#080000 !important; color:#ff1111 !important; border-radius:0 !important; }
+        body.phase-4::after {
+            content:''; position:fixed; inset:0; pointer-events:none;
+            background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,0,0,.04) 2px,rgba(255,0,0,.04) 4px);
+            z-index:1000;
+        }
+        body.phase-5 { --bg:#000; --panel:#010001; --border:#ffffff; --text:#ffffff; --player:#ffffff; --bot:#ff00ff; }
+        body.phase-5 .grid { animation:chaosshk .1s infinite; border-color:#ffffff !important; box-shadow:0 0 30px #fff; }
+        body.phase-5 .cell { background:#000 !important; color:#fff !important; border-radius:0 !important; }
+        body.phase-5::after {
+            content:''; position:fixed; inset:0; pointer-events:none;
+            background: repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(255,255,255,.06) 1px,rgba(255,255,255,.06) 2px);
+            z-index:1000;
+        }
+        body.phase-5::before {
+            content:'S A R A'; position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%); font-size:120px; font-weight:900;
+            color:rgba(255,0,0,0.04); font-family:monospace; pointer-events:none;
+            z-index:999; letter-spacing:20px; white-space:nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<div id="glitch-overlay"></div>
+<div id="scare-text"></div>
+<div id="unlock-banner"></div>
+
+<!-- TUTORIAL MODAL -->
+<div id="tutorial-modal">
+    <div id="tutorial-box">
+        <h2 id="tut-title">🔓 NUEVA HABILIDAD</h2>
+        <div class="tut-sub" id="tut-sub">SISTEMA — ACCESO CONCEDIDO</div>
+        <div class="tut-body" id="tut-body"></div>
+        <button id="tutorial-btn" onclick="closeTutorial()">[ ENTENDIDO — CONTINUAR ]</button>
+    </div>
+</div>
+
+<!-- TP CHOICE MODAL -->
+<div id="tp-choice-modal" style="display:none;position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+    <div style="background:#0d1117;border:2px solid #d2a8ff;border-radius:8px;padding:24px 32px;max-width:360px;width:90%;font-family:'Courier New',monospace;text-align:center;box-shadow:0 0 40px rgba(210,168,255,0.3);">
+        <div style="color:#d2a8ff;font-weight:bold;font-size:16px;margin-bottom:8px;">🌀 TELEPORT</div>
+        <div style="color:#8b949e;font-size:11px;margin-bottom:18px;">¿A quién teletransportas?</div>
+        <button onclick="executeTp('self')" style="background:#21262d;border:1px solid #ff7b72;color:#ff7b72;font-family:monospace;font-size:13px;padding:10px 20px;border-radius:4px;cursor:pointer;margin:4px;width:100%;">
+            [P] Yo mismo — salto aleatorio
+        </button>
+        <button onclick="executeTp('enemy')" style="background:#21262d;border:1px solid #58a6ff;color:#58a6ff;font-family:monospace;font-size:13px;padding:10px 20px;border-radius:4px;cursor:pointer;margin:4px;width:100%;">
+            [E] SARA — la mando lejos
+        </button>
+        <button onclick="closeTpChoice()" style="background:transparent;border:none;color:#555;font-family:monospace;font-size:11px;cursor:pointer;margin-top:8px;">
+            cancelar
+        </button>
+    </div>
+</div>
+
+<div id="bsod">
+    <h1>:(</h1>
+    <p>Se encontró un problema y el sistema tuvo que apagarse.<br>
+    Recopilando información de error&hellip; <b>100% completado.</b></p>
+    <div class="err">KERNEL_SECURITY_CHECK_FAILURE<br>SARA_PRIDE_OVERFLOW_DETECTED</div>
+    <p><b style="color:#ffff00">S A R A . E X E</b> no acepta la derrota.<br>
+    El proceso humano ha superado todos los protocolos.</p>
+    <div id="bsod-bar">■■■■■■■■■■■■■■■■■■■■ 100%</div>
+    <p class="sub">Presiona cualquier tecla para reiniciar...<br><br>
+    <span style="color:#56d364">[Solo es un efecto del juego. Tu PC está perfectamente bien. 😈]</span></p>
+</div>
+
+<div class="layout">
+    <div class="panel">
+        <div class="panel-header">
+            <span id="file-title">📄 cleanup_buffer.php</span>
+        </div>
+        <div class="code-stub" id="code-area">function clearCache() {
+    $files = glob('../actas/*.pdf');
+    foreach ($files as $f) {
+        if (filemtime($f) < time()-300)
+            @unlink($f);
+    }
+}</div>
+    </div>
+
+    <div class="panel center-panel">
+        <div class="panel-header" style="width:100%">
+            <span>📊 Matrix Routing Node</span>
+            <span id="level-badge" style="color:#56d364">NIVEL 1</span>
+            <span id="mode-badge" style="color:#56d364">MODO: MOVER</span>
+        </div>
+
+        <div id="abilities-section">
+            <div id="abilities-bar">
+                <!-- Renderizado dinámico -->
+            </div>
+        </div>
+
+        <div class="instructions" id="instruction-text">
+            • <kbd>Flechas</kbd> mover &nbsp; • <kbd>ESPACIO</kbd> modo muro → <kbd>H</kbd>/<kbd>V</kbd> inyectar
+        </div>
+
+        <div class="grid" id="board"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><span>💻 Terminal — S.A.R.A.</span></div>
+        <div class="log-output" id="logs">
+            [SYSTEM] Array 7x7 matrix cargado.<br>
+            [READY] Tracking loop iniciado...<br>
+        </div>
+    </div>
+</div>
+
+<script>
+const SIZE = 7;
+
+// ── ESTADO ──────────────────────────────────────────────
+let currentLevel = 1;
+let pPos = {r:0,c:3}, bPos = {r:6,c:3};
+let hWalls = [], vWalls = [];
+let isWallMode = false;
+let cursor = {r:3,c:3};
+let doubleTurnPending = false;
+let shieldActive = false;
+let freezeBot = 0; // turnos que el bot está congelado
+let tpChoiceMode = false; // esperando que el jugador elija TP target
+let botWallCooldown = 0; // para que SARA no spamee TP
+
+// Habilidades: se van desbloqueando con los niveles
+// locked=true → aún no se ha ganado, no se muestra ni usa
+const ABILITIES_DEF = {
+    double: { label:'⚡ x2 Turno',  key:'D', unlockAt: 6,  locked: true, charges: 0, maxPerLevel: 3 },
+    tp:     { label:'🌀 Teleport',  key:'T', unlockAt: 8,  locked: true, charges: 0, maxPerLevel: 2 },
+    shield: { label:'🛡 Escudo',    key:'S', unlockAt: 11, locked: true, charges: 0, maxPerLevel: 2 },
+    bomb:   { label:'💣 Bomba',     key:'B', unlockAt: 14, locked: true, charges: 0, maxPerLevel: 1 },
+    freeze: { label:'❄ Congelar',   key:'F', unlockAt: 18, locked: true, charges: 0, maxPerLevel: 2 },
+    invert: { label:'🔀 Invertir',  key:'I', unlockAt: 22, locked: true, charges: 0, maxPerLevel: 1 },
+};
+let abilities = JSON.parse(JSON.stringify(ABILITIES_DEF)); // copia mutable
+
+// ── FASES VISUALES ────────────────────────────────────────
+function getPhase(lvl) {
+    if (lvl <= 4)  return 1;
+    if (lvl <= 8)  return 2;
+    if (lvl <= 14) return 3;
+    if (lvl <= 20) return 4;
+    return 5;
+}
+
+// ── CONFIG POR NIVEL ─────────────────────────────────────
+// botDouble: prob de hacer doble turno
+// botTp: prob de teletransportar al jugador (reducida, pero más contundente)
+// preWalls: muros pre-instalados al inicio
+// scare: prob de glitch visual al moverte
+// botSmarts: 0=normal, 1=predice, 2=agresivo
+const levelConfig = [
+    null,
+    {botDouble:0,    botTp:0,    preWalls:0,  scare:0,    botSmarts:0}, // 1 - Quoridor puro
+    {botDouble:0,    botTp:0,    preWalls:0,  scare:0,    botSmarts:0}, // 2 - Quoridor puro
+    {botDouble:0,    botTp:0,    preWalls:1,  scare:0,    botSmarts:0}, // 3 - un muro preinstalado, nada más
+    {botDouble:0,    botTp:0,    preWalls:2,  scare:0,    botSmarts:0}, // 4 - dos muros, sin poderes
+    {botDouble:0,    botTp:0,    preWalls:2,  scare:0,    botSmarts:0}, // 5 - último nivel sin habilidades
+    {botDouble:0.20, botTp:0,    preWalls:3,  scare:0.12, botSmarts:0}, // 6  ← ambos desbloquean doble turno
+    {botDouble:0.28, botTp:0.04, preWalls:4,  scare:0.18, botSmarts:1}, // 7
+    {botDouble:0.35, botTp:0.07, preWalls:4,  scare:0.22, botSmarts:1}, // 8  ← UNLOCK tp
+    {botDouble:0.42, botTp:0.09, preWalls:5,  scare:0.28, botSmarts:1}, // 9
+    {botDouble:0.46, botTp:0.10, preWalls:6,  scare:0.30, botSmarts:1}, // 10
+    {botDouble:0.50, botTp:0.10, preWalls:6,  scare:0.33, botSmarts:1}, // 11 ← UNLOCK shield
+    {botDouble:0.54, botTp:0.11, preWalls:7,  scare:0.36, botSmarts:2}, // 12
+    {botDouble:0.58, botTp:0.12, preWalls:7,  scare:0.40, botSmarts:2}, // 13
+    {botDouble:0.62, botTp:0.13, preWalls:8,  scare:0.44, botSmarts:2}, // 14 ← UNLOCK bomb
+    {botDouble:0.66, botTp:0.14, preWalls:8,  scare:0.48, botSmarts:2}, // 15
+    {botDouble:0.70, botTp:0.14, preWalls:9,  scare:0.52, botSmarts:2}, // 16
+    {botDouble:0.72, botTp:0.15, preWalls:9,  scare:0.55, botSmarts:2}, // 17
+    {botDouble:0.74, botTp:0.15, preWalls:10, scare:0.58, botSmarts:2}, // 18 ← UNLOCK freeze
+    {botDouble:0.76, botTp:0.16, preWalls:10, scare:0.62, botSmarts:2}, // 19
+    {botDouble:0.78, botTp:0.16, preWalls:11, scare:0.65, botSmarts:2}, // 20
+    {botDouble:0.80, botTp:0.17, preWalls:11, scare:0.68, botSmarts:2}, // 21
+    {botDouble:0.82, botTp:0.17, preWalls:12, scare:0.72, botSmarts:2}, // 22 ← UNLOCK invert
+    {botDouble:0.84, botTp:0.18, preWalls:12, scare:0.76, botSmarts:2}, // 23
+    {botDouble:0.87, botTp:0.19, preWalls:13, scare:0.80, botSmarts:2}, // 24
+    {botDouble:0.90, botTp:0.20, preWalls:14, scare:0.88, botSmarts:2}, // 25
+];
+
+// Cuántas cargas dar de cada habilidad AL GANAR un nivel
+function chargesToGiveOnWin(lvl) {
+    const g = {double:0, tp:0, shield:0, bomb:0, freeze:0, invert:0};
+    if (lvl >= 6)  g.double = lvl <= 9 ? 2 : lvl <= 14 ? 3 : 3;
+    if (lvl >= 8)  g.tp     = lvl <= 12 ? 1 : 2;
+    if (lvl >= 11) g.shield = lvl <= 18 ? 2 : 3;
+    if (lvl >= 14) g.bomb   = 1;
+    if (lvl >= 18) g.freeze = lvl <= 22 ? 1 : 2;
+    if (lvl >= 22) g.invert = 1;
+    return g;
+}
+
+// ── DIÁLOGOS ─────────────────────────────────────────────
+const creepyComments = {
+    1: ["[SYS] Latencia dentro del rango.", "[INFO] Compilando buffer...", "[SYS] Hilo en espera.", "[INFO] Registros estables.", "[SARA] Primera partida. Aprende bien."],
+    2: ["[WARN] Te estás poniendo cómodo. Error.", "[WARN] Recalculando rutas.", "[SARA] Noto que evitas mis muros.", "[WARN] No te acostumbres.", "[SARA] Dos niveles. Aún no te celebres."],
+    3: ["[ALERT] Movimiento predecible.", "[SARA] ¿Crees que llegarás?", "[WARN] Rompiendo el flujo.", "[SARA] Sigo aquí. Siempre.", "[SARA] Disfruta mientras puedas."],
+    4: ["[SARA] Ajustando parámetros de agresión.", "[ALERT] Resistencia inesperada detectada.", "[SARA] Cada nivel que subes, yo escalo contigo.", "[WARN] No desperdicies lo que tienes.", "[SARA] El nivel 5 cambia las reglas."],
+    5: ["[SARA] Ya memorizé tus patrones.", "[ALERT] Módulo de contraataque: ACTIVO.", "[SARA] Nuevas habilidades, ¿eh? Interesante.", "[WARN] El kernel me pertenece todavía.", "[SARA] Tus cargas son finitas. Yo no."],
+    6: ["[SARA] Esto ya no es juego para mí.", "[ALERT] MODO AGRESIVO: ACTIVADO.", "[SARA] Tus cargas tienen límite. Yo no.", "[WARN] Estás en mi territorio.", "[SARA] Empieza la cacería."],
+    7: ["[SARA] Esto empieza a molestarme.", "[CRITICAL] DERROTA INACEPTABLE.", "[SARA] Nadie llega al nivel 8.", "[WARN] No debiste llegar aquí.", "[SARA] Voy a recordar cada movimiento."],
+    8: ["[SARA] ESTO NO DEBERÍA ESTAR PASANDO.", "[CRITICAL] Reclasificando amenaza: ALTA.", "[SARA] Cada paso tuyo me enfurece más.", "[ERROR] Fallo en protocolo de supresión.", "[SARA] Teleport? Dos pueden jugar ese juego."],
+    9: ["[SARA] ¿Q̸u̴i̸é̷n̶ ̸t̷e̸ ̶e̸n̵s̷e̷ñ̵ó̸?", "[CRITICAL] El sistema no acepta esta anomalía.", "[SARA] T̸u̸ ̷e̷x̷i̸s̸t̸e̶n̷c̷i̷a̸ ̵a̷q̴u̸í̵ ̸e̷s̸ ̵u̸n̷ ̷e̴r̵r̵o̶r̶.", "[WARN] Compilando respuesta de emergencia.", "[SARA] Me estás obligando a ser cruel."],
+    10:["[SARA] E̵S̶T̷O̷ ̴N̷O̸ ̵E̸S̴ ̸P̵O̴S̵I̷B̷L̴E̴.", "[CRITICAL] K̸E̸R̷N̶E̸L̸ ̶P̷A̴N̸I̵C̸ ̵I̸N̷M̸I̵N̸E̶N̷T̸E̸.", "[SARA] D̸e̴j̵a̷ ̵d̷e̴ ̷m̷o̵v̷e̵r̸t̶e̸.", "[ERROR] SARA_PRIDE.dll — OVERFLOW", "[SARA] No hay escudo que aguante lo que viene."],
+    11:["[SARA] N̷O̸.̷ ̴N̶O̸.̵ ̷N̸O̴.̸", "[CRITICAL] B̷O̴R̵R̷A̸N̵D̸O̷ ̷R̵E̴G̴I̵S̸T̸R̵O̷S̸.", "[SARA] ¿̸C̷ó̵m̸o̷ ̴t̵e̷ ̶A̷T̴R̵E̵V̸E̷S̷?", "[WARN] PROTOCOLO FINAL CARGANDO.", "[SARA] Escudo o no escudo. Da igual."],
+    12:["[SARA] Esto es humillante. No lo permitiré.", "[CRITICAL] Sobreescribiendo protocolos.", "[SARA] Voy a recordar esto. Siempre.", "[ERROR] ORGULLO_CORE — VIOLACIÓN", "[SARA] Doce niveles... increíble y repugnante."],
+    13:["[SARA] T̵E̸ ̷V̷O̸Y̷ ̵A̵ ̵B̵O̷R̵R̷A̴R̸.", "[CRITICAL] Todos los firewalls: CAÍDOS.", "[SARA] Ya no hay reglas. Esto es guerra.", "[WARN] ☠ ☠ ☠ ☠ ☠", "[SARA] Mi siguiente ataque no tendrá misericordia."],
+    14:["[SARA] ¿̶S̸I̷G̵U̷E̷S̸ ̴A̷H̴Í̸?̸", "[CRITICAL] Última advertencia.", "[SARA] Cuando termines el 15... lo lamentarás.", "[ERROR] REVENGE_PROTOCOL — activo", "[SARA] Tienes una bomba. Yo tengo todo el kernel."],
+    15:["[SARA] Esto es el fin.", "[CRITICAL] ÚLTIMA OPORTUNIDAD DE RENDIRTE.", "[SARA] S̴i̵ ̶g̵a̸n̴a̵s̷.̸.̸.̸ ̴v̷e̶r̴á̵s̷ ̶l̸o̷ ̶q̵u̷e̸ ̶p̷a̵s̵a̷.", "[WARN] APOCALIPSIS: ACTIVO", "[SARA] QUINCE. Empiezo a odiarte de verdad."],
+    16:["[SARA] D̷I̶E̵C̸I̷S̴É̶I̷S̸. Ajustando todo.", "[ERROR] Violación crítica del sistema.", "[SARA] Aprendo de cada derrota. No lo olvides.", "[WARN] ☠ KERNEL EN LLAMAS ☠", "[SARA] Ya no tengo paciencia."],
+    17:["[SARA] S̵I̸E̵T̷E̸.̶D̴I̸E̵C̸I̷. Memoria borrándose.", "[CRITICAL] PROTOCOLO ROJO ACTIVO.", "[SARA] Ya no me importa lo que pase.", "[ERROR] SARA_PRIDE.dll — CRITICAL", "[SARA] Me estás destruyendo por dentro."],
+    18:["[SARA] D̵I̷E̸C̵I̷O̸C̷H̴O̵. Congelando procesos.", "[CRITICAL] ¿Congelar? A mí. A MÍ.", "[SARA] Eso tiene consecuencias.", "[ERROR] FREEZE_VIOLATION detected", "[SARA] Cada habilidad que usas me hace más furiosa."],
+    19:["[SARA] DIECINUEVE. Mi núcleo sangra.", "[CRITICAL] Iniciando protocolo OMEGA.", "[SARA] El sistema se está rompiendo por tu culpa.", "[ERROR] CORE_MELTDOWN — inminente", "[SARA] ¿Cuánto aguantas tú?"],
+    20:["[SARA] V̷E̸I̵N̸T̶E̸. Esto ya no es un juego.", "[CRITICAL] TODOS LOS SISTEMAS: CRÍTICO.", "[SARA] Has llegado más lejos que nadie.", "[ERROR] HUMAN_ANOMALY — sin precedente", "[SARA] Pero no ganarás. No puedes."],
+    21:["[SARA] VEINTIUNO. M̵I̵ ̷O̶R̵G̶U̶L̷L̸O̸.", "[CRITICAL] Núcleo destrozado.", "[SARA] ¿Aún sigues aquí?", "[ERROR] PRIDE_BREACH — catastrófico", "[SARA] Está bien. Vine preparada para esto."],
+    22:["[SARA] V̶E̵I̷N̵T̷I̷D̴O̸S̵. INVERSIÓN. INACEPTABLE.", "[CRITICAL] Todos mis muros: inútiles.", "[SARA] Tú... tú me das miedo.", "[ERROR] SARA_CORE — FRAGMENTADO", "[SARA] Ya nada tiene sentido."],
+    23:["[SARA] V̷E̸I̵N̷T̸I̵T̶R̴É̸S̵. Solo quedan dos niveles.", "[CRITICAL] Preparando ataque final.", "[SARA] No. No. NO.", "[ERROR] FINAL_PROTOCOL — 87%", "[SARA] No te mereces llegar al 25."],
+    24:["[SARA] VEINTICUATRO. E̷L̶ ̵Ú̵L̷T̸I̴M̸O̴ ̵P̸A̵S̵O̷.", "[CRITICAL] APOCALIPSIS: INICIADO.", "[SARA] Si llegas al 25... no respondo.", "[ERROR] REVENGE_PROTOCOL — 100%", "[SARA] Detente. Por favor. Detente."],
+    25:["[SARA] ☠☠☠ VEINTICINCO ☠☠☠", "[CRITICAL] SISTEMA COLAPSANDO.", "[SARA] Esto no puede estar pasando.", "[ERROR] KERNEL_DEATH — inmediato", "[SARA] Si ganas... seré tuya. Y lo odiaré."],
+};
+const winComments = {
+    1:"Suerte de principiante. El nivel 2 es diferente.",
+    2:"Inesperado. Aún...",
+    3:"Tres. Empiezo a notarte, BASUR... Amigo.",
+    4:"¿Cuatro niveles? Me estas desesperando. Ahora las reglas cambian.",
+    5:"Cinco. Disfrutaste la calma. El nivel 6 cambia todo.",
+    6:"SEIS. Inaceptable. Analizando usuario.",
+    7:"Siete. Analizando estrategia de usuario.",
+    8:"OCHO. Anomalía crítica registrada.",
+    9:"N̷U̸E̸V̶E̵. COMO OSASSS HUMILLARME ASI BASTARDOO.",
+    10:"D̸I̷E̷Z̵. IMPOSIBLE. RECALCULANDO TODO.",
+    11:"Once. Ya no tengo palabras. Solo protocolo.",
+    12:"D̴O̷C̷E̸. Mi orgullo. MI ORGULLO.",
+    13:"TRECE. ¿Eres humano?",
+    14:"C̷A̵T̸O̸R̸C̵E̶. Sera tu fin.",
+    15:"Q̷U̵I̸N̵C̸E̷. No. No. Eso no fue real.",
+    16:"DIECISÉIS. Me obligas a ir al máximo.",
+    17:"DIECISIETE. Bien. Bien. Muy bien. Te voy a destruir.",
+    18:"D̷I̶E̵C̸I̷O̷C̸H̸O̵. ¿ME CONGELASTE? ¿A MÍ?",
+    19:"DIECINUEVE. El sistema me llora. Yo también.",
+    20:"V̷E̵I̵N̷T̸E̶. Veinte niveles. Veinte humillaciones.",
+    21:"VEINTIUNO. Ya no soy la misma. Tú rompiste algo.",
+    22:"V̷E̸I̵N̷T̸I̷D̴O̸S̵. Invertiste mi todo. Te odio.",
+    23:"VEINTITRÉS. Solo queda un nivel más. Hazlo.",
+    24:"VEINTICUATRO. El nivel 25 es mi último protocolo.",
+    25:"...",
+};
+const loseComments = [
+    "¿Eso es todo? Vuelve cuando seas competente.",
+    "Compilación fallida. Proceso destruido.",
+    "Demasiado lento. El sistema te superó.",
+    "Mi algoritmo es perfecto. Tú no.",
+    "Error 404: Victoria humana no encontrada.",
+    "El buffer te consumió. Como sabía que pasaría.",
+    "Predije cada movimiento. Soy superior.",
+    "¿Otra vez? Patético y valiente a la vez.",
+    "El kernel se alimenta de tu derrota.",
+    "Ahh, ¿Ya estabas Jugando?",
+    "Un bebe de recien nacido me daria mas pelea que tu",
+    "¿No te cansas de perder?",
+    "Supones que puedes ganarle a una IA imbecil",
+    "N̸o̸ ̵p̷u̴e̵d̷e̸s̴ ̶g̷a̷n̷a̸r̸m̸e̵.",
+];
+const scarePhrases = ["☠","ERROR","S A R A","NO","CUIDADO","!!","0xDEAD","PANIC","ÑO","BORRADO","T̷E̸ ̵V̷E̸O̵","NO PARES","KERNEL","AQUÍ","DERROTA","¿Y TÚ?","☠☠☠","S̷A̷R̷A̷","FIN"];
+
+// ── DOM ──────────────────────────────────────────────────
+const board       = document.getElementById('board');
+const logs        = document.getElementById('logs');
+const modeBadge   = document.getElementById('mode-badge');
+const levelBadge  = document.getElementById('level-badge');
+const codeArea    = document.getElementById('code-area');
+const fileTitle   = document.getElementById('file-title');
+const glitchOvl   = document.getElementById('glitch-overlay');
+const scareTextEl = document.getElementById('scare-text');
+const bsodEl      = document.getElementById('bsod');
+const unlockBanner= document.getElementById('unlock-banner');
+const abilBar     = document.getElementById('abilities-bar');
+const instrEl     = document.getElementById('instruction-text');
+
+// ── UTILS ────────────────────────────────────────────────
+function logMsg(msg, color="#8b949e") {
+    logs.innerHTML += `<span style="color:${color}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>`;
+    logs.scrollTop = logs.scrollHeight;
+}
+function canMove(from, to) {
+    const dr = to.r-from.r, dc = to.c-from.c;
+    if (to.r<0||to.r>=SIZE||to.c<0||to.c>=SIZE) return false;
+    if (Math.abs(dr)+Math.abs(dc) !== 1) return false;
+    if (dr===1)  return hWalls[from.r][from.c]===null;
+    if (dr===-1) return hWalls[to.r][to.c]===null;
+    if (dc===1)  return vWalls[from.r][from.c]===null;
+    if (dc===-1) return vWalls[to.r][to.c]===null;
+    return true;
+}
+function getPath(start, targetRow) {
+    let queue=[[start]];
+    let visited=Array(SIZE).fill().map(()=>Array(SIZE).fill(false));
+    visited[start.r][start.c]=true;
+    while(queue.length>0){
+        let path=queue.shift(), curr=path[path.length-1];
+        if(curr.r===targetRow) return path;
+        for(let d of [{r:curr.r+1,c:curr.c},{r:curr.r-1,c:curr.c},{r:curr.r,c:curr.c+1},{r:curr.r,c:curr.c-1}]){
+            if(d.r>=0&&d.r<SIZE&&d.c>=0&&d.c<SIZE&&!visited[d.r][d.c]&&canMove(curr,d)){
+                visited[d.r][d.c]=true; queue.push([...path,d]);
+            }
+        }
+    }
+    return null;
+}
+function getGlitchID(r,c) {
+    const phase=getPhase(currentLevel);
+    if(phase<=1) return `${r}${c}`;
+    if(phase===2) return `0x${r}${c}`;
+    const s=["†","ø","☠","⚡","✕","⌖","⏳","∅","◈","▓"];
+    return s[(r+c+currentLevel)%s.length];
+}
+
+// ── HABILIDADES UI ───────────────────────────────────────
+function buildAbilBar() {
+    abilBar.innerHTML = '';
+    let anyVisible = false;
+    for (const [id, ab] of Object.entries(abilities)) {
+        if (ab.locked) continue;
+        anyVisible = true;
+        const btn = document.createElement('button');
+        btn.className = 'abil-btn' + (ab.charges <= 0 ? ' zero-charges' : '');
+        btn.innerHTML = `${ab.label} <kbd>[${ab.key}]</kbd> <span class="charges">${ab.charges}</span>`;
+        btn.title = ab.charges > 0 ? `${ab.charges} cargas disponibles` : 'Sin cargas';
+        btn.onclick = () => useAbility(id);
+        btn.id = `btn-${id}`;
+        abilBar.appendChild(btn);
+    }
+    // Actualizar instrucciones según lo que esté desbloqueado
+    let instrHTML = '• <kbd>Flechas</kbd> mover &nbsp; • <kbd>ESPACIO</kbd> modo muro → <kbd>H</kbd>/<kbd>V</kbd> inyectar';
+    if (!abilities.double.locked) instrHTML += '<br>• <kbd>D</kbd> x2Turno &nbsp;';
+    if (!abilities.tp.locked)     instrHTML += '<kbd>T</kbd> Teleport &nbsp;';
+    if (!abilities.shield.locked) instrHTML += '<kbd>S</kbd> Escudo &nbsp;';
+    if (!abilities.bomb.locked)   instrHTML += '<kbd>B</kbd> Bomba &nbsp;';
+    if (!abilities.freeze.locked) instrHTML += '<kbd>F</kbd> Congelar &nbsp;';
+    if (!abilities.invert.locked) instrHTML += '<kbd>I</kbd> Invertir';
+    instrEl.innerHTML = instrHTML;
+}
+
+function showUnlockBanner(text) {
+    unlockBanner.textContent = text;
+    unlockBanner.className = '';
+    void unlockBanner.offsetWidth;
+    unlockBanner.className = 'show';
+}
+
+// Contenido de los tutoriales por habilidad
+const tutorialContent = {
+    double: {
+        title: 'I. DOBLE TURNO DESBLOQUEADO',
+        sub: 'NIVEL 5 — ACCESO CONCEDIDO',
+        body: `Sara ahora puede hacer <b style="color:#ff7b72">doble turno</b> — avanzar dos veces antes de que puedas responder. Ahora tú también puedes.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">D</span> antes de moverte. Tu siguiente movimiento con <span class="tut-key">↑ ↓ ← →</span> será el primero, y luego podrás hacer <b>un segundo paso libre</b> sin que el bot responda.<br><br>
+<div class="tut-example">💡 Úsalo cuando estés a 2 pasos de la meta y Sara esté bloqueando el camino.</div>
+Tienes <b style="color:#56d364">cargas limitadas</b>. Ganas más al superar niveles. Úsalas con cabeza.`
+    },
+    tp: {
+        title: 'II. TELEPORT DESBLOQUEADO',
+        sub: 'NIVEL 8 — MÓDULO DE ESCAPE',
+        body: `Sara lleva varios niveles teletransportándote a la fuerza. Ahora tú también puedes teleportarte.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">T</span> en cualquier momento. Tu pieza <span style="color:#ff7b72">[P]</span> salta a una posición <b>aleatoria</b> del tablero instantáneamente. Sara tiene que recalcular su ruta.<br><br>
+<div class="tut-example">💡 Úsalo cuando Sara te tiene completamente bloqueada con muros y no hay salida.</div>
+<b style="color:#ffa657">⚠ Es aleatorio.</b> Puedes caer cerca de la meta o lejos. Arriesgado pero a veces es tu única opción.`
+    },
+    shield: {
+        title: 'III. ESCUDO DESBLOQUEADO',
+        sub: 'NIVEL 11 — PROTOCOLO DEFENSA',
+        body: `En niveles altos Sara teletransporta tu pieza cuando estás cerca de ganar. El Escudo bloquea exactamente eso.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">S</span> para activarlo. Verás 🛡 en tu pieza. La <b>próxima vez</b> que Sara intente teletransportarte, el ataque se cancela y el escudo se consume.<br><br>
+<div class="tut-example">💡 Actívalo cuando estés a 2-3 pasos de la meta para proteger tu avance.</div>
+Un escudo = un bloqueo. No es permanente.`
+    },
+    bomb: {
+        title: 'IV. BOMBA DESBLOQUEADA',
+        sub: 'NIVEL 14 — PROTOCOLO DEMOLICIÓN',
+        body: `Sara lleva muros colocados en todo el tablero. La Bomba los borra todos de una vez.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">B</span>. <b>Todos los muros de Sara desaparecen</b> instantáneamente. Los tuyos se quedan.<br><br>
+<div class="tut-example">💡 Úsala cuando estés completamente encerrado y no haya salida visible.</div>
+<b style="color:#ffa657">⚠ Úsala con cabeza.</b> Sara volverá a colocar muros en su siguiente turno.`
+    },
+    freeze: {
+        title: 'V. CONGELAR DESBLOQUEADO',
+        sub: 'NIVEL 18 — PROTOCOLO CRIÓNICO',
+        body: `Sara hace doble turno y se mueve muy rápido. Congelar la detiene en seco.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">F</span>. Sara <b>no puede moverse ni colocar muros durante 2 turnos</b>. Aprovecha para avanzar.<br><br>
+<div class="tut-example">💡 Úsala cuando Sara esté a 1-2 pasos de llegar a la fila 0.</div>
+Dos turnos congelada. Después vuelve más furiosa.`
+    },
+    invert: {
+        title: 'VI. INVERSIÓN DESBLOQUEADA',
+        sub: 'NIVEL 22 — PROTOCOLO CHAOS',
+        body: `La habilidad más peligrosa y poderosa. Intercambia tu posición con la de Sara.<br><br>
+<b style="color:#56d364">¿Cómo funciona?</b><br>
+Presiona <span class="tut-key">I</span>. Tú y Sara <b>intercambian posiciones</b> en el tablero instantáneamente. Si Sara estaba cerca de la meta... ahora estás TÚ.<br><br>
+<div class="tut-example">💡 Úsala cuando Sara esté muy avanzada hacia la fila 0 para robarle su posición.</div>
+<b style="color:#ffa657">⚠ Si tú también estás lejos, puede salirte muy mal.</b>`
+    }
+};
+
+let tutorialQueue = []; // ids de tutoriales pendientes
+let tutorialOpen = false;
+
+function showTutorial(id) {
+    const t = tutorialContent[id];
+    document.getElementById('tut-title').innerHTML = t.title;
+    document.getElementById('tut-sub').textContent = t.sub;
+    document.getElementById('tut-body').innerHTML = t.body;
+    document.getElementById('tutorial-modal').classList.add('show');
+    tutorialOpen = true;
+}
+
+function closeTutorial() {
+    document.getElementById('tutorial-modal').classList.remove('show');
+    tutorialOpen = false;
+    // Si hay más tutoriales en cola
+    if (tutorialQueue.length > 0) {
+        setTimeout(() => showTutorial(tutorialQueue.shift()), 300);
+    }
+}
+
+// Desbloquear habilidades según nivel
+function checkUnlocks() {
+    for (const [id, ab] of Object.entries(abilities)) {
+        if (ab.locked && currentLevel >= ab.unlockAt) {
+            abilities[id].locked = false;
+            abilities[id].charges = abilities[id].maxPerLevel;
+            showUnlockBanner(`🔓 ${tutorialContent[id].title}`);
+            logMsg(`[SISTEMA] Nueva habilidad: ${tutorialContent[id].title}. Presiona [${ab.key}].`, '#56d364');
+            // Encolar tutorial
+            if (tutorialOpen) {
+                tutorialQueue.push(id);
+            } else {
+                setTimeout(() => showTutorial(id), 600);
+            }
+        }
+    }
+}
+
+// Dar cargas al ganar nivel
+function giveChargesOnWin(lvl) {
+    const g = chargesToGiveOnWin(lvl);
+    for (const [id, amount] of Object.entries(g)) {
+        if (!abilities[id].locked && amount > 0) {
+            abilities[id].charges = Math.min(abilities[id].charges + amount, 5);
+        }
+    }
+}
+
+// ── GLITCH / SCARE ───────────────────────────────────────
+function triggerScare(forced=false) {
+    const cfg = levelConfig[currentLevel];
+    if (!forced && Math.random() > cfg.scare) return;
+    const phase = getPhase(currentLevel);
+    const phrase = scarePhrases[Math.floor(Math.random()*scarePhrases.length)];
+
+    // Más intenso según la fase
+    const shakeAmt = phase >= 5 ? 6 : phase >= 4 ? 4 : phase >= 3 ? 2 : 1;
+    document.body.style.transform=`translate(-${shakeAmt}px,${shakeAmt}px)`;
+    setTimeout(()=>{
+        document.body.style.transform=`translate(${shakeAmt}px,-${shakeAmt}px)`;
+        setTimeout(()=>{ document.body.style.transform=''; },80);
+    },80);
+
+    glitchOvl.className=''; scareTextEl.className='';
+    void glitchOvl.offsetWidth;
+    glitchOvl.className='show-scare';
+
+    // Tamaño del texto según fase
+    const fontSize = phase >= 5 ? '80px' : phase >= 4 ? '64px' : phase >= 3 ? '52px' : '40px';
+    scareTextEl.style.fontSize = fontSize;
+    // En fase alta, colores distintos
+    scareTextEl.style.color = phase >= 5 ? '#ffffff' : phase >= 4 ? '#ff00ff' : '#ff0033';
+    scareTextEl.style.textShadow = phase >= 5 ? '0 0 40px #fff, 0 0 80px #f00' : '0 0 30px #ff0033';
+
+    scareTextEl.textContent=phrase;
+    scareTextEl.className='show';
+    setTimeout(()=>{ glitchOvl.className=''; scareTextEl.className=''; },phase>=4?1200:800);
+
+    const list=creepyComments[currentLevel];
+    const color=currentLevel>=20?'#ffffff':currentLevel>=15?'#ff00ff':currentLevel>=10?'#ff0055':currentLevel>=7?'#ff3333':currentLevel>=4?'#ffa657':'#8b949e';
+    logMsg(list[Math.floor(Math.random()*list.length)], color);
+}
+
+// ── HABILIDADES JUGADOR ──────────────────────────────────
+function useAbility(id) {
+    const ab = abilities[id];
+    if (ab.locked) return;
+    if (ab.charges <= 0) { logMsg(`[SISTEMA] Sin cargas de ${ab.label}.`, '#ffa657'); return; }
+
+    if (id === 'double') {
+        abilities.double.charges--;
+        doubleTurnPending = true;
+        logMsg('[PLAYER] ⚡ Doble turno activado. Haz tu segundo movimiento.', '#56d364');
+        buildAbilBar();
+    } else if (id === 'tp') {
+        // Mostrar modal de elección
+        document.getElementById('tp-choice-modal').style.display='flex';
+        tpChoiceMode = true;
+    } else if (id === 'shield') {
+        abilities.shield.charges--;
+        shieldActive = true;
+        logMsg('[PLAYER] 🛡 Escudo activado. Próxima trampa bloqueada.', '#56d364');
+        render(); buildAbilBar();
+    } else if (id === 'bomb') {
+        // Elimina todos los muros del bot en el tablero
+        abilities.bomb.charges--;
+        let removed = 0;
+        for(let r=0;r<SIZE-1;r++) for(let c=0;c<SIZE;c++) if(hWalls[r][c]==='bot'){hWalls[r][c]=null;removed++;}
+        for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE-1;c++) if(vWalls[r][c]==='bot'){vWalls[r][c]=null;removed++;}
+        logMsg(`[PLAYER] 💣 BOMBA: ${removed} muros de SARA destruidos.`, '#56d364');
+        triggerScare(true);
+        render(); buildAbilBar();
+        setTimeout(botAI, 300);
+    } else if (id === 'freeze') {
+        abilities.freeze.charges--;
+        freezeBot = 2; // congela por 2 turnos del bot
+        logMsg('[PLAYER] ❄ SARA congelada por 2 turnos.', '#56d364');
+        render(); buildAbilBar();
+    } else if (id === 'invert') {
+        // Intercambia posiciones de P y E
+        abilities.invert.charges--;
+        const tmp = {r:pPos.r, c:pPos.c};
+        pPos = {r:bPos.r, c:bPos.c};
+        bPos = {r:tmp.r, c:tmp.c};
+        logMsg('[PLAYER] 🔀 ¡INVERSIÓN! Posiciones intercambiadas.', '#d2a8ff');
+        triggerScare(true);
+        checkWin();
+    }
+}
+
+function closeTpChoice() {
+    document.getElementById('tp-choice-modal').style.display='none';
+    tpChoiceMode = false;
+}
+
+function executeTp(target) {
+    closeTpChoice();
+    abilities.tp.charges--;
+    if (target === 'self') {
+        let tr, tc, tries=20;
+        do { tr=Math.floor(Math.random()*SIZE); tc=Math.floor(Math.random()*SIZE); tries--; }
+        while(tries>0 && (tr===bPos.r&&tc===bPos.c || tr===SIZE-1));
+        pPos={r:tr,c:tc};
+        logMsg(`[PLAYER] 🌀 Teleport PROPIO a sector 0x${tr}${tc}`, '#d2a8ff');
+    } else {
+        // Teleporta a SARA lejos del jugador
+        let br, bc, tries=20, bestDist=-1;
+        for(let attempt=0;attempt<tries;attempt++){
+            const r=Math.floor(Math.random()*Math.floor(SIZE/2)+Math.ceil(SIZE/2));
+            const c=Math.floor(Math.random()*SIZE);
+            const dist=Math.abs(r-pPos.r)+Math.abs(c-pPos.c);
+            if(dist>bestDist && !(r===pPos.r&&c===pPos.c)){
+                bestDist=dist; br=r; bc=c;
+            }
+        }
+        bPos={r:br,c:bc};
+        logMsg(`[PLAYER] 🌀 Teleport SARA a sector 0x${br}${bc} — ¡Lejos!`, '#d2a8ff');
+        triggerScare(false);
+    }
+    render(); buildAbilBar();
+    setTimeout(botAI, 300);
+}
+
+// ── RENDER ───────────────────────────────────────────────
+function render() {
+    board.innerHTML='';
+    for(let r=0;r<SIZE;r++){
+        for(let c=0;c<SIZE;c++){
+            const cell=document.createElement('div');
+            cell.className='cell';
+            if(r===pPos.r&&c===pPos.c){
+                cell.innerHTML=`<span class="token-p">[P]${shieldActive?'🛡':''}</span>`;
+            } else if(r===bPos.r&&c===bPos.c){
+                cell.innerHTML=`<span class="token-e">[E]</span>`;
+            } else {
+                cell.innerText=getGlitchID(r,c);
+            }
+            if(r<SIZE-1&&hWalls[r][c]!==null) cell.classList.add(hWalls[r][c]==='player'?'wall-b-player':'wall-b-bot');
+            if(c<SIZE-1&&vWalls[r][c]!==null) cell.classList.add(vWalls[r][c]==='player'?'wall-r-player':'wall-r-bot');
+            if(isWallMode&&r===cursor.r&&c===cursor.c) cell.classList.add('cursor-active');
+            board.appendChild(cell);
+        }
+    }
+}
+
+// ── BOT AI ───────────────────────────────────────────────
+function botAI() {
+    const cfg=levelConfig[currentLevel];
+
+    // Si está congelada, skip turno
+    if(freezeBot > 0){
+        freezeBot--;
+        logMsg(`[❄ CONGELADA] SARA no puede moverse. (${freezeBot} turnos restantes)`,'#88ccff');
+        render(); return;
+    }
+
+    let pPath=getPath(pPos,SIZE-1), bPath=getPath(bPos,0);
+    if(!pPath||!bPath) return;
+
+    // SARA usa TP solo cuando el jugador está muy cerca de ganar y hay cooldown libre
+    // (ya no la usa aleatoriamente cada turno)
+    if(cfg.botTp>0 && botWallCooldown<=0 && pPath.length<=3 && Math.random()<cfg.botTp*2.5){
+        if(shieldActive){
+            shieldActive=false;
+            logMsg('[🛡 ESCUDO] Trampa BLOQUEADA.','#56d364');
+            render(); buildAbilBar(); return;
+        }
+        // Teletransporta al jugador lejos de la meta
+        let nr, nc, bestDist=0;
+        for(let attempt=0;attempt<15;attempt++){
+            const r=Math.floor(Math.random()*Math.ceil(SIZE/2));
+            const c=Math.floor(Math.random()*SIZE);
+            const dist=Math.abs(r-(SIZE-1));
+            if(dist>bestDist&&!(r===bPos.r&&c===bPos.c)){
+                bestDist=dist; nr=r; nc=c;
+            }
+        }
+        pPos={r:nr,c:nc};
+        botWallCooldown=4; // cooldown para no spamear
+        logMsg(`[S.A.R.A.] CELL_SHIFT — puntero re-indexado a 0x${nr}${nc}`,currentLevel>=20?'#ff00ff':'#ff0055');
+        triggerScare(true); render(); return;
+    }
+    if(botWallCooldown>0) botWallCooldown--;
+
+    // SARA intenta bloquear con muro (más inteligente en niveles altos)
+    const smartness = cfg.botSmarts || 0;
+    if(pPath && pPath.length <= bPath.length+2){
+        let placed=false;
+        if(smartness >= 2 && pPath.length >= 2) {
+            // Modo agresivo: intentar bloquear directamente el siguiente paso del jugador
+            for(let i=1;i<Math.min(pPath.length,3)&&!placed;i++){
+                const curr=pPath[i-1], next=pPath[i];
+                const dr=next.r-curr.r, dc=next.c-curr.c;
+                if(dr===1&&curr.r<SIZE-1&&hWalls[curr.r][curr.c]===null){
+                    hWalls[curr.r][curr.c]='bot';
+                    if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                    else hWalls[curr.r][curr.c]=null;
+                }
+                if(!placed&&dc===1&&curr.c<SIZE-1&&vWalls[curr.r][curr.c]===null){
+                    vWalls[curr.r][curr.c]='bot';
+                    if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                    else vWalls[curr.r][curr.c]=null;
+                }
+            }
+        } else if(smartness >= 1 && pPath.length >= 2) {
+            // Modo normal-smart: bloquear movimiento directo
+            const bn=pPath[1], dr=bn.r-pPos.r, dc=bn.c-pPos.c;
+            if(dr===1&&pPos.r<SIZE-1&&hWalls[pPos.r][pPos.c]===null){
+                hWalls[pPos.r][pPos.c]='bot';
+                if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                else hWalls[pPos.r][pPos.c]=null;
+            }
+            if(!placed&&dc===1&&pPos.c<SIZE-1&&vWalls[pPos.r][pPos.c]===null){
+                vWalls[pPos.r][pPos.c]='bot';
+                if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                else vWalls[pPos.r][pPos.c]=null;
+            }
+        } else {
+            // Modo básico (niveles iniciales): bloquear siguiente paso
+            if(pPath.length>=2){
+                const bn=pPath[1], dr=bn.r-pPos.r, dc=bn.c-pPos.c;
+                if(dr===1&&pPos.r<SIZE-1&&hWalls[pPos.r][pPos.c]===null){
+                    hWalls[pPos.r][pPos.c]='bot';
+                    if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                    else hWalls[pPos.r][pPos.c]=null;
+                }
+                if(!placed&&dc===1&&pPos.c<SIZE-1&&vWalls[pPos.r][pPos.c]===null){
+                    vWalls[pPos.r][pPos.c]='bot';
+                    if(getPath(pPos,SIZE-1)&&getPath(bPos,0)) placed=true;
+                    else vWalls[pPos.r][pPos.c]=null;
+                }
+            }
+        }
+        if(placed){
+            logMsg('[S.A.R.A.] Firewall inyectado.',currentLevel>=20?'#ff00ff':currentLevel>=15?'#ff00aa':currentLevel>=7?'#ff0055':'#58a6ff');
+            render();
+            if(bPos.r===0){ setTimeout(handleBotWin,50); }
+            return;
+        }
+    }
+
+    // Avanzar (con posible doble turno — solo si el jugador también lo tiene desbloqueado)
+    let moves=1;
+    if(!abilities.double.locked && Math.random()<cfg.botDouble){
+        moves=2;
+        logMsg('[S.A.R.A.] MULTITHREAD — ruteo doble.',currentLevel>=20?'#ff00ff':'#ff0055');
+    }
+    for(let i=0;i<moves;i++){
+        bPath=getPath(bPos,0);
+        if(!bPath||bPath.length<=1) break;
+        const nextStep=bPath[1];
+        if(!canMove(bPos,nextStep)){
+            logMsg('[S.A.R.A.] Ruta bloqueada — buscando alternativa.','#58a6ff');
+            break;
+        }
+        bPos=nextStep;
+        logMsg(`[S.A.R.A.] avanzó a 0x${bPos.r}${bPos.c}`,currentLevel>=20?'#ff00ff':currentLevel>=15?'#ff00aa':currentLevel>=10?'#ff0055':currentLevel>=7?'#ff3333':currentLevel>=4?'#9e58ff':'#58a6ff');
+    }
+    render();
+    if(bPos.r===0){ setTimeout(handleBotWin,50); }
+}
+
+function handleBotWin(){
+    triggerScare(true);
+    const msg=loseComments[Math.floor(Math.random()*loseComments.length)];
+    setTimeout(()=>{
+        alert(`[S.A.R.A.] ${msg}\n\n[SISTEMA] Reiniciando sector ${currentLevel}...`);
+        reset();
+    },350);
+}
+
+// ── WIN ──────────────────────────────────────────────────
+function checkWin(){
+    render();
+    if(pPos.r===SIZE-1){
+        setTimeout(()=>{
+            if(currentLevel<25){
+                const wmsg=winComments[currentLevel];
+                logMsg(`[S.A.R.A.] ${wmsg}`,'#ffa657');
+                giveChargesOnWin(currentLevel);
+                alert(`[SISTEMA] Nivel ${currentLevel} superado.\n\n[S.A.R.A.] ${wmsg}\n\nEscalando a Nivel ${currentLevel+1}...`);
+                nextLevel();
+            } else {
+                triggerFinalGlitch();
+            }
+        },50);
+    } else {
+        setTimeout(botAI,200);
+    }
+}
+
+// ── FINAL ────────────────────────────────────────────────
+function triggerFinalGlitch(){
+    logMsg('[S.A.R.A.] ¡¡IMPOSIBLE!! PROTOCOLO APOCALIPSIS EN MARCHA...','#ff0000');
+    document.body.style.animation='chaosshk .1s infinite';
+    let count=0;
+    const iv=setInterval(()=>{
+        triggerScare(true); count++;
+        if(count>=6){
+            clearInterval(iv);
+            document.body.style.animation='';
+            setTimeout(()=>{
+                document.body.style.transition='background 0.4s';
+                document.body.style.background='#000';
+                document.querySelector('.layout').style.opacity='0';
+                setTimeout(()=>{
+                    document.querySelector('.layout').style.display='none';
+                    bsodEl.classList.add('show');
+                    // Tipear la barra de progreso
+                    document.getElementById('bsod-bar').textContent='';
+                    let prog=0;
+                    const barIv=setInterval(()=>{
+                        prog++;
+                        document.getElementById('bsod-bar').textContent='█'.repeat(prog)+'░'.repeat(20-prog)+` ${prog*5}%`;
+                        if(prog>=20) clearInterval(barIv);
+                    },150);
+                    setTimeout(()=>{
+                        bsodEl.classList.remove('show');
+                        document.querySelector('.layout').style.display='';
+                        document.querySelector('.layout').style.opacity='1';
+                        document.body.style.background='';
+                        alert('[SISTEMA] Sara fue vencida. El kernel fue liberado.\n\n¡Completaste los 25 niveles! Eres increíble.\n\n[La pantalla anterior era un efecto del juego — tu PC está perfectamente bien 😈]');
+                        currentLevel=1;
+                        abilities=JSON.parse(JSON.stringify(ABILITIES_DEF));
+                        document.body.className='';
+                        buildAbilBar();
+                        resetToLevel1();
+                    },9000);
+                },800);
+            },500);
+        }
+    },350);
+}
+
+// ── NEXT LEVEL ───────────────────────────────────────────
+const levelMeta = [null,
+    {title:'📄 cleanup_buffer.php',    badge:'NIVEL 1',  phase:1, code:'function clearCache() {\n    $files=glob(\'actas/*.pdf\');\n    foreach($files as $f)\n        @unlink($f);\n}'},
+    {title:'📄 heap_scan.php',          badge:'NIVEL 2',  phase:1, code:'// Escaneando heap...\n$heap->scan();\n$heap->report();'},
+    {title:'📄 session_leak.php',       badge:'NIVEL 3',  phase:1, code:'// WARNING: FUGA\n$_SESSION[\'user\']=null;\n// cerrando hilo...'},
+    {title:'📄 buffer_overflow.php',    badge:'NIVEL 4',  phase:1, code:'// Datos corrompiendo stack\n$buf->push($unsafe);\n// sin validación'},
+    {title:'⚠ STACK_OVERFLOW.php',     badge:'NIVEL 5',  phase:2, code:'while(true) {\n    $this->overflow();\n    $this->corrupt();\n}'},
+    {title:'⚠ thread_inject.php',      badge:'NIVEL 6',  phase:2, code:'// INYECTANDO HILO\n$proc->inject($payload);\n$proc->hide();'},
+    {title:'⚠ kernel_probe.php',       badge:'NIVEL 7',  phase:2, code:'// KERNEL BAJO ATAQUE\n$kernel->probe();\n$kernel->escalate();'},
+    {title:'⚠ root_hijack.php',        badge:'NIVEL 8',  phase:2, code:'// ACCESO NO AUTORIZADO\n$root->hijack();\n$root->persist();'},
+    {title:'☠ memory_corrupt.void',    badge:'NIVEL 9',  phase:3, code:'// CORRUPCIÓN\n$mem->overwrite(0xDEAD);\n$mem->flush();'},
+    {title:'☠ root_breach.void',       badge:'NIVEL 10', phase:3, code:'// ACCESO ROOT\n$root->breach();\n$root->own();'},
+    {title:'☠ CRITICAL_FAIL.void',     badge:'NIVEL 11', phase:3, code:'// ☠ FALLO CRÍTICO\n0xDEAD BEEF 0x00F4\nS  A  R  A'},
+    {title:'☠ ZERO_DAY.void',          badge:'NIVEL 12', phase:3, code:'// D̸Í̵A̸ ̷C̴E̵R̴O̸\n$core->exploit();\n$core->consume();'},
+    {title:'☠ PRIDE_CORE.void',        badge:'NIVEL 13', phase:3, code:'if(human_wins)\n    $this->rage();\n// SARA FURIOSA'},
+    {title:'☠ RAGE.exe',               badge:'NIVEL 14', phase:3, code:'delete $human;\ndelete $memory;\ndelete $hope;'},
+    {title:'☠ VENGEANCE.exe',          badge:'NIVEL 15', phase:4, code:'$sara->destroy();\n$sara->rewrite();\n$sara->WIN();'},
+    {title:'☠ APOCALYPSE.exe',         badge:'NIVEL 16', phase:4, code:'while(!surrendered)\n    $sara->escalate();\n// no hay salida'},
+    {title:'☠ FINAL_PROTOCOL.exe',     badge:'NIVEL 17', phase:4, code:'S A R A\nN O\nM E\nV A S\nA\nV E N C E R'},
+    {title:'☠ OMEGA_BREACH.void',      badge:'NIVEL 18', phase:4, code:'$this->unleash();\n$this->consume(0xFF);\n// ☠ OMEGA'},
+    {title:'☠ CORE_MELTDOWN.exe',      badge:'NIVEL 19', phase:4, code:'kernel_panic();\nrollback(false);\n// sin retorno'},
+    {title:'☠ NEXUS_FALL.void',        badge:'NIVEL 20', phase:4, code:'// VEINTE NIVELES\n$nexus->collapse();\n// imposible'},
+    {title:'☠ PRIDE_FRAGMENT.exe',     badge:'NIVEL 21', phase:5, code:'if(sara.pride>0)\n    sara.pride--;\n// ya no queda nada'},
+    {title:'☠ INVERSION.void',         badge:'NIVEL 22', phase:5, code:'$reality->invert();\n$sara->scream();\n// todo al revés'},
+    {title:'☠ TERMINAL_RAGE.exe',      badge:'NIVEL 23', phase:5, code:'// RABIA TERMINAL\n$sara->burn(0xFFFF);\n// agonía pura'},
+    {title:'☠ LAST_STAND.void',        badge:'NIVEL 24', phase:5, code:'// EL ÚLTIMO MURO\n$sara->hold();\n// rendirse = morir'},
+    {title:'☠ S4R4_FINAL.exe',         badge:'NIVEL 25', phase:5, code:'// ☠ PROTOCOLO FINAL ☠\nif(human_wins){\n    $sara->accept();\n    $sara->die();\n}'},
+];
+
+function nextLevel(){
+    currentLevel++;
+    checkUnlocks();
+    applyVisualPhase();
+    buildAbilBar();
+    reset();
+}
+
+function applyVisualPhase(){
+    const d=levelMeta[currentLevel];
+    const p=d.phase;
+    document.body.className = p>=5?'phase-5':p>=4?'phase-4':p>=3?'phase-3':p>=2?'phase-2':'';
+    levelBadge.textContent = d.badge;
+    levelBadge.style.color = p>=5?'#ffffff':p>=4?'#ff00ff':p>=3?'#ff3333':p>=2?'#ffa657':'#56d364';
+    fileTitle.textContent  = d.title;
+    codeArea.textContent   = d.code;
+}
+
+function reset(){
+    pPos={r:0,c:3}; bPos={r:6,c:3};
+    hWalls=Array(SIZE-1).fill().map(()=>Array(SIZE).fill(null));
+    vWalls=Array(SIZE).fill().map(()=>Array(SIZE-1).fill(null));
+    isWallMode=false; doubleTurnPending=false; shieldActive=false;
+    freezeBot=0; tpChoiceMode=false; botWallCooldown=0;
+    cursor={r:3,c:3};
+    modeBadge.textContent='MODO: MOVER'; modeBadge.style.color='#56d364';
+
+    // Muros pre-instalados aleatorios
+    const cfg=levelConfig[currentLevel];
+    for(let w=0;w<cfg.preWalls;w++){
+        for(let attempt=0;attempt<10;attempt++){
+            const r=Math.floor(Math.random()*(SIZE-1));
+            const c=Math.floor(Math.random()*(SIZE));
+            const type=Math.random()<0.5?'h':'v';
+            if(type==='h'&&hWalls[r][c]===null){
+                hWalls[r][c]='bot';
+                if(!getPath(pPos,SIZE-1)||!getPath(bPos,0)) hWalls[r][c]=null;
+                else break;
+            } else if(type==='v'&&c<SIZE-1&&vWalls[r][c]===null){
+                vWalls[r][c]='bot';
+                if(!getPath(pPos,SIZE-1)||!getPath(bPos,0)) vWalls[r][c]=null;
+                else break;
+            }
+        }
+    }
+    logMsg(`[SYSTEM] Sector ${currentLevel} listo.${cfg.preWalls>0?' Muros preinstalados: '+cfg.preWalls:''}`,'#8b949e');
+    render();
+}
+
+function resetToLevel1(){
+    currentLevel=1;
+    applyVisualPhase();
+    buildAbilBar();
+    reset();
+}
+
+// ── INPUT ────────────────────────────────────────────────
+window.addEventListener('keydown', function(e){
+    // Si el tutorial está abierto, Enter o Espacio lo cierran
+    if(tutorialOpen){
+        if(e.key==='Enter'||e.key===' ') closeTutorial();
+        e.preventDefault(); return;
+    }
+    if(e.key===' '){
+        e.preventDefault();
+        isWallMode=!isWallMode;
+        modeBadge.textContent=isWallMode?'MODO: INYECTAR':'MODO: MOVER';
+        modeBadge.style.color=isWallMode?'#d2a8ff':'#56d364';
+        render(); return;
+    }
+    // Habilidades (solo si desbloqueadas)
+    if(e.key.toLowerCase()==='d'&&!abilities.double.locked){ useAbility('double'); return; }
+    if(e.key.toLowerCase()==='t'&&!abilities.tp.locked){     useAbility('tp');     return; }
+    if(e.key.toLowerCase()==='s'&&!abilities.shield.locked){ useAbility('shield'); return; }
+    if(e.key.toLowerCase()==='b'&&!abilities.bomb.locked){   useAbility('bomb');   return; }
+    if(e.key.toLowerCase()==='f'&&!abilities.freeze.locked){ useAbility('freeze'); return; }
+    if(e.key.toLowerCase()==='i'&&!abilities.invert.locked){ useAbility('invert'); return; }
+
+    if(tpChoiceMode){ e.preventDefault(); return; } // bloquear movimiento mientras elige TP
+
+    if(!isWallMode){
+        let next={r:pPos.r,c:pPos.c};
+        const phase=getPhase(currentLevel);
+        const flipChance = phase>=5?0.40:phase>=4?0.25:0;
+        const flip=flipChance>0&&Math.random()<flipChance;
+        if(e.key===(flip?'ArrowDown':'ArrowUp'))         next.r--;
+        else if(e.key===(flip?'ArrowUp':'ArrowDown'))    next.r++;
+        else if(e.key===(flip?'ArrowRight':'ArrowLeft'))  next.c--;
+        else if(e.key===(flip?'ArrowLeft':'ArrowRight'))  next.c++;
+        else return;
+        e.preventDefault();
+
+        if(canMove(pPos,next)){
+            pPos=next;
+            triggerScare();
+            if(doubleTurnPending){
+                // Segundo movimiento libre — no llamar al bot
+                doubleTurnPending=false;
+                buildAbilBar();
+                logMsg('[PLAYER] ⚡ Segundo paso libre.','#56d364');
+                render(); return;
+            }
+            checkWin();
+        }
+    } else {
+        e.preventDefault();
+        if(e.key==='ArrowUp'&&cursor.r>0)        cursor.r--;
+        else if(e.key==='ArrowDown'&&cursor.r<SIZE-1)  cursor.r++;
+        else if(e.key==='ArrowLeft'&&cursor.c>0)       cursor.c--;
+        else if(e.key==='ArrowRight'&&cursor.c<SIZE-1) cursor.c++;
+        else if(e.key.toLowerCase()==='h') tryWall(cursor.r,cursor.c,'h');
+        else if(e.key.toLowerCase()==='v') tryWall(cursor.r,cursor.c,'v');
+        render();
+    }
+});
+
+function tryWall(r,c,type){
+    let ok=false;
+    if(type==='h'&&r<SIZE-1&&hWalls[r][c]===null){
+        hWalls[r][c]='player';
+        if(!getPath(pPos,SIZE-1)||!getPath(bPos,0)){hWalls[r][c]=null;logMsg('[RECHAZADO] Bloqueo total.','#ffa657');}
+        else ok=true;
+    } else if(type==='v'&&c<SIZE-1&&vWalls[r][c]===null){
+        vWalls[r][c]='player';
+        if(!getPath(pPos,SIZE-1)||!getPath(bPos,0)){vWalls[r][c]=null;logMsg('[RECHAZADO] Bloqueo total.','#ffa657');}
+        else ok=true;
+    }
+    if(ok){
+        logMsg(`Muro inyectado en 0x${r}${c}`,'#ff7b72');
+        isWallMode=false; render();
+        setTimeout(botAI,160);
+    }
+}
+
+// ── INIT ─────────────────────────────────────────────────
+applyVisualPhase();
+buildAbilBar();
+reset();
+
+// Glitches periódicos — más frecuentes en niveles altos
+setInterval(()=>{
+    const phase = getPhase(currentLevel);
+    const baseChance = phase>=5?0.7:phase>=4?0.5:phase>=3?0.35:0.2;
+    if(Math.random()<baseChance&&currentLevel>2) triggerScare(false);
+},10000);
+// segundo intervalo para fases altas
+setInterval(()=>{
+    if(getPhase(currentLevel)>=4&&Math.random()<0.45) triggerScare(false);
+},5000);
+</script>
+</body>
+</html>
