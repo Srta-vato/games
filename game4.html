@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>5 en linea</title>
+<style>
+  :root{
+    --bg:#1e1e1e; --sidebar:#252526; --activitybar:#333333; --titlebar:#3c3c3c;
+    --statusbar:#007acc; --text:#d4d4d4; --linenum:#858585; --tab-active:#1e1e1e;
+    --tab-inactive:#2d2d2d; --border:#2b2b2b; --blue:#569cd6; --green:#6a9955;
+    --orange:#ce9178; --yellow:#dcdcaa; --purple:#c586c0; --func:#4ec9b0; --numc:#b5cea8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:'Cascadia Code','Consolas',monospace;overflow:hidden;user-select:none;}
+  #titlebar{height:30px;background:var(--titlebar);display:flex;align-items:center;
+    padding:0 10px;font-size:12px;color:#ccc;justify-content:space-between;}
+  #titlebar .menu{display:flex;gap:14px;}
+  #main{display:flex;height:calc(100% - 52px);}
+  #activitybar{width:48px;background:var(--activitybar);display:flex;flex-direction:column;
+    align-items:center;padding-top:8px;gap:22px;color:#858585;font-size:20px;}
+  #activitybar .active{color:#fff;border-left:2px solid #fff;padding-left:2px;}
+  #sidebar{width:230px;background:var(--sidebar);font-size:13px;padding-top:8px;flex-shrink:0;}
+  #sidebar .title{padding:4px 20px;font-size:11px;letter-spacing:1px;color:#bbb;}
+  #sidebar .file{padding:3px 20px 3px 30px;color:#ccc;cursor:pointer;}
+  #sidebar .file.open{background:#37373d;}
+  #sidebar .folder{padding:3px 20px 3px 10px;color:#ccc;}
+  #editorArea{flex:1;display:flex;flex-direction:column;background:var(--bg);min-width:0;}
+  #tabs{height:35px;background:var(--sidebar);display:flex;}
+  .tab{padding:0 14px;display:flex;align-items:center;font-size:13px;
+    background:var(--tab-inactive);border-right:1px solid var(--border);color:#969696;gap:8px;}
+  .tab.active{background:var(--tab-active);color:#fff;border-top:1px solid var(--blue);}
+  #editorBody{flex:1;position:relative;overflow:auto;}
+
+  .gutter{width:45px;background:var(--bg);color:var(--linenum);font-size:14px;
+    text-align:right;padding:10px 8px 0 0;line-height:26px;flex-shrink:0;}
+  .codeline{white-space:pre;height:26px;font-size:14px;line-height:26px;}
+  .kw{color:var(--purple);} .str{color:var(--orange);} .com{color:var(--green);}
+  .fn,.func{color:var(--func);} .num{color:var(--numc);} .type{color:var(--blue);}
+  #codeLayer{position:absolute;inset:0;display:flex;background:var(--bg);}
+  #codeArea{flex:1;padding:10px 0 0 12px;}
+  #gameLayer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    padding:18px;overflow:auto;background:var(--bg);}
+  #hint{color:#858585;font-size:12px;margin-bottom:8px;}
+  #boardOuter{background:#2b2118;padding:14px;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+  #board{position:relative;background:#dcb26b;border-radius:2px;}
+  .gline{position:absolute;background:#5a4630;}
+  .stone{position:absolute;border-radius:50%;box-shadow:0 2px 3px rgba(0,0,0,.5);
+    transform:translate(-50%,-50%);}
+  .stone-p{background:radial-gradient(circle at 35% 30%,#fff,#d8d8d8 60%,#aaa 100%);}
+  .stone-a{background:radial-gradient(circle at 35% 30%,#5a5a5a,#1a1a1a 60%,#000 100%);}
+  .stone.last::after{
+    content:"";position:absolute;inset:-6px;border-radius:50%;
+    border:2px solid #e6483c;box-shadow:0 0 6px rgba(230,72,60,.7);
+  }
+  .hitzone{position:absolute;transform:translate(-50%,-50%);cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div id="titlebar">
+  <div class="menu"><span>Archivo</span><span>Edición</span><span>Selección</span><span>Ver</span><span>Ir</span><span>Ejecutar</span><span>Terminal</span><span>Ayuda</span></div>
+  <div>informe_profesores</div>
+  <div>&#9472; &#9723; &#10005;</div>
+</div>
+
+<div id="main">
+  <div id="activitybar">
+    <div class="active">&#128196;</div>
+    <div>&#128269;</div>
+    <div>&#8942;</div>
+    <div>&#128203;</div>
+    <div>&#9881;</div>
+  </div>
+  <div id="sidebar">
+    <div class="title">INFORME_PROFESORES</div>
+    <div class="folder">&#9662; fallas</div>
+    <div class="folder">&#9662; formulario</div>
+    <div class="folder">&#9656; notas</div>
+    <div class="folder">&#9656; planillas</div>
+    <div class="file">firmaTablero.html</div>
+    <div class="file open">informe_profesores.html</div>
+    <div class="file">informe.php</div>
+    <div class="file">NarrativeEngine.html</div>
+    <div class="file">planilla_notas.html</div>
+  </div>
+  <div id="editorArea">
+    <div id="tabs">
+      <div class="tab">&#128196; notas.js</div>
+      <div class="tab active">&#128196; informe_profesores.html <span style="margin-left:6px;">&#10005;</span></div>
+    </div>
+    <div id="editorBody">
+
+      <div id="codeLayer">
+        <div class="gutter" id="gutter"></div>
+        <div id="codeArea"></div>
+      </div>
+
+      <div id="gameLayer">
+        <div id="hint">Presiona <b>ESC</b> para alternar entre el código y la vista</div>
+        <div id="boardOuter"><div id="board"></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="statusbar" style="height:22px;background:var(--statusbar);display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:12px;color:#fff;flex-shrink:0;">
+  <div class="left" style="display:flex;gap:16px;">
+    <span id="turnIndicator">&#9679; rama: main</span>
+    <span id="scoreIndicator">Rondas &#8212; Tú: 0 | CPU: 0</span>
+  </div>
+  <div class="right" style="display:flex;gap:16px;">
+    <span id="timerIndicator">00:00</span>
+    <span>Ln 1, Col 1</span>
+    <span>UTF-8</span>
+    <span>HTML</span>
+  </div>
+</div>
+
+<div id="overlayMsg" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#252526;border:1px solid #444;padding:20px 30px;border-radius:4px;
+  font-size:16px;display:none;z-index:50;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);">
+  <div id="overlayText"></div>
+  <button onclick="closeOverlay()" style="margin-top:10px;background:#0e639c;border:none;color:#fff;
+    padding:6px 14px;border-radius:3px;cursor:pointer;font-family:inherit;">Aceptar</button>
+</div>
+
+<script>
+const fakeLines = [
+"&lt;!DOCTYPE html&gt;",
+"&lt;<span class='kw'>html</span> <span class='fn'>lang</span>=<span class='str'>\"es\"</span>&gt;",
+"&lt;<span class='kw'>head</span>&gt;",
+"  &lt;<span class='kw'>meta</span> <span class='fn'>charset</span>=<span class='str'>\"UTF-8\"</span>&gt;",
+"  <span class='com'>// Genera el informe de asistencia de profesores</span>",
+"  <span class='kw'>function</span> <span class='func'>generarInforme</span>(<span class='type'>docente</span>) {",
+"    <span class='kw'>const</span> filas = <span class='fn'>obtenerRegistros</span>(docente);",
+"    <span class='kw'>let</span> total = <span class='num'>0</span>;",
+"    <span class='kw'>for</span> (<span class='kw'>let</span> i=<span class='num'>0</span>; i&lt;filas.length; i++) {",
+"      total += filas[i].horas;",
+"    }",
+"    <span class='kw'>return</span> total;",
+"  }",
+"  <span class='com'>// Validación de planilla de notas</span>",
+"  <span class='kw'>function</span> <span class='func'>validarPlanilla</span>(<span class='type'>data</span>) {",
+"    <span class='kw'>if</span> (!data) <span class='kw'>return</span> <span class='kw'>false</span>;",
+"    <span class='kw'>return</span> <span class='kw'>true</span>;",
+"  }",
+"&lt;/<span class='kw'>head</span>&gt;",
+"&lt;<span class='kw'>body</span>&gt;",
+"  <span class='com'>// Renderiza tabla de notas por curso</span>",
+];
+function fillCodeLayer(){
+  const gutter = document.getElementById('gutter');
+  const codeArea = document.getElementById('codeArea');
+  let g="", c="";
+  for(let i=0;i<70;i++){
+    c += `<div class="codeline">${fakeLines[i % fakeLines.length]}</div>`;
+    g += (i+1)+"<br>";
+  }
+  gutter.innerHTML = g;
+  codeArea.innerHTML = c;
+}
+fillCodeLayer();
+
+const codeLayer = document.getElementById('codeLayer');
+const gameLayer = document.getElementById('gameLayer');
+function showCode(){ codeLayer.style.display='flex'; gameLayer.style.display='none'; }
+function showGame(){ codeLayer.style.display='none'; gameLayer.style.display='flex'; }
+showGame();
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape'){
+    if(gameLayer.style.display==='none') showGame(); else showCode();
+  }
+});
+const SIZE = 19;
+let grid = [];
+let stoneEls = [];
+let lastAIStoneEl = null;
+let gameOver = false;
+let cActive = true;
+let matchScore = {player:0, cpu:0};
+let seconds = 0;
+let timerInterval = null;
+const MATCH_TARGET = 10;
+
+const CELL = 32;      // separación entre intersecciones (px)
+const STONE = 26;     // diámetro de ficha
+const PAD = STONE/2 + 4;
+const boardEl = document.getElementById('board');
+const boardW = (SIZE-1)*CELL + PAD*2;
+boardEl.style.width = boardW+"px";
+boardEl.style.height = boardW+"px";
+
+function drawGridLines(){
+  for(let i=0;i<SIZE;i++){
+    const pos = PAD + i*CELL;
+    const h = document.createElement('div');
+    h.className='gline';
+    h.style.left=PAD+"px"; h.style.top=pos+"px";
+    h.style.width=((SIZE-1)*CELL)+"px"; h.style.height="1px";
+    boardEl.appendChild(h);
+    const v = document.createElement('div');
+    v.className='gline';
+    v.style.top=PAD+"px"; v.style.left=pos+"px";
+    v.style.height=((SIZE-1)*CELL)+"px"; v.style.width="1px";
+    boardEl.appendChild(v);
+  }
+}
+
+function initBoard(){
+  grid = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  stoneEls = Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  lastAIStoneEl = null;
+  gameOver = false;
+  boardEl.innerHTML = "";
+  drawGridLines();
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const hz = document.createElement('div');
+      hz.className='hitzone';
+      hz.style.left=(PAD + c*CELL)+"px";
+      hz.style.top=(PAD + r*CELL)+"px";
+      hz.style.width=CELL+"px";
+      hz.style.height=CELL+"px";
+      hz.onclick = ()=>handleClick(r,c);
+      boardEl.appendChild(hz);
+    }
+  }
+}
+initBoard();
+
+function startTimer(){
+  clearInterval(timerInterval);
+  seconds = 0;
+  timerInterval = setInterval(()=>{
+    seconds++;
+    const m = String(Math.floor(seconds/60)).padStart(2,'0');
+    const s = String(seconds%60).padStart(2,'0');
+    document.getElementById('timerIndicator').textContent = m+":"+s;
+  },1000);
+}
+startTimer();
+
+function updateScoreUI(){
+  document.getElementById('scoreIndicator').textContent =
+    `Rondas — Tú: ${matchScore.player} | CPU: ${matchScore.cpu}`;
+}
+
+function handleClick(r,c){
+  if(gameOver || !cActive) return;
+  if(grid[r][c]) return;
+  place(r,c,'player');
+  if(checkWin(r,c,'player')){ endRound('player'); return; }
+  if(isBoardFull()){ endRound(null); return; }
+  cActive = false;
+  setTimeout(()=>{ aiTurn(); }, 250 + Math.random()*300);
+}
+
+function place(r,c,who){
+  grid[r][c]=who;
+  const el = document.createElement('div');
+  el.className = 'stone ' + (who==='player' ? 'stone-p' : 'stone-a');
+  el.style.width = STONE+"px";
+  el.style.height = STONE+"px";
+  el.style.left = (PAD + c*CELL)+"px";
+  el.style.top = (PAD + r*CELL)+"px";
+  boardEl.appendChild(el);
+  stoneEls[r][c] = el;
+
+  if(who==='cpu'){
+    if(lastAIStoneEl) lastAIStoneEl.classList.remove('last');
+    el.classList.add('last');
+    lastAIStoneEl = el;
+  }
+}
+
+function isBoardFull(){
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!grid[r][c]) return false;
+  return true;
+}
+
+const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+function checkWin(r,c,who){
+  for(const [dr,dc] of DIRS){
+    let count=1;
+    for(let s=1;s<5;s++){
+      const nr=r+dr*s, nc=c+dc*s;
+      if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||grid[nr][nc]!==who) break;
+      count++;
+    }
+    for(let s=1;s<5;s++){
+      const nr=r-dr*s, nc=c-dc*s;
+      if(nr<0||nr>=SIZE||nc<0||nc>=SIZE||grid[nr][nc]!==who) break;
+      count++;
+    }
+    if(count>=5) return true;
+  }
+  return false;
+}
+
+function hasNeighbor(r,c,radius){
+  for(let dr=-radius;dr<=radius;dr++){
+    for(let dc=-radius;dc<=radius;dc++){
+      if(dr===0&&dc===0) continue;
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&grid[nr][nc]) return true;
+    }
+  }
+  return false;
+}
+function getCandidates(radius){
+  const list=[];
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(grid[r][c]) continue;
+    if(hasNeighbor(r,c,radius)) list.push([r,c]);
+  }
+  if(list.length===0){
+    const mid=Math.floor(SIZE/2);
+    list.push([mid,mid]);
+  }
+  return list;
+}
+function quickCellScore(r,c,who){
+  const opp = who==='player' ? 'cpu' : 'player';
+  let score = 0;
+  for(const [dr,dc] of DIRS){
+    score += lineScore(r,c,dr,dc,who);
+    score += lineScore(r,c,dr,dc,opp) * 1.05;
+  }
+  return score;
+}
+function lineScore(r,c,dr,dc,who){
+  let count=1, openEnds=0;
+  let nr=r+dr,nc=c+dc;
+  while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&grid[nr][nc]===who){count++;nr+=dr;nc+=dc;}
+  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&!grid[nr][nc]) openEnds++;
+  nr=r-dr;nc=c-dc;
+  while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&grid[nr][nc]===who){count++;nr-=dr;nc-=dc;}
+  if(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&!grid[nr][nc]) openEnds++;
+  const base = [0,1,10,100,1000,100000][Math.min(count,5)];
+  return base * (openEnds>0?1:0.5);
+}
+
+function boardLines(){
+  const lines=[];
+  const cellChar=(v)=> v===null?'.':(v==='cpu'?'X':'O');
+  for(let r=0;r<SIZE;r++){
+    let s='#'; for(let c=0;c<SIZE;c++) s+=cellChar(grid[r][c]); s+='#'; lines.push(s);
+  }
+  for(let c=0;c<SIZE;c++){
+    let s='#'; for(let r=0;r<SIZE;r++) s+=cellChar(grid[r][c]); s+='#'; lines.push(s);
+  }
+  for(let k=-(SIZE-5);k<=SIZE-5;k++){
+    let s='#';
+    for(let r=0;r<SIZE;r++){ const c=r+k; if(c>=0&&c<SIZE) s+=cellChar(grid[r][c]); }
+    s+='#'; if(s.length>=7) lines.push(s);
+  }
+  for(let k=4;k<=2*SIZE-6;k++){
+    let s='#';
+    for(let r=0;r<SIZE;r++){ const c=k-r; if(c>=0&&c<SIZE) s+=cellChar(grid[r][c]); }
+    s+='#'; if(s.length>=7) lines.push(s);
+  }
+  return lines;
+}
+function windowScore(line, S, O){
+  const scan = line.split('').map(ch=>ch==='#'?O:ch).join('');
+  let total=0;
+  for(let i=0;i+5<=scan.length;i++){
+    const w = scan.substr(i,5);
+    if(w.indexOf(O)!==-1) continue;
+    let s=0; for(const ch of w) if(ch===S) s++;
+    if(s===5) total += 100000000;
+    else if(s===4) total += 80000;
+    else if(s===3) total += 1200;
+    else if(s===2) total += 40;
+    else if(s===1) total += 1;
+  }
+  return total;
+}
+function evaluateBoard(){
+  const lines = boardLines();
+  let cpuScore=0, playerScore=0;
+  for(const line of lines){
+    cpuScore += windowScore(line,'X','O');
+    playerScore += windowScore(line,'O','X');
+  }
+  return cpuScore - playerScore*1.08;
+}
+
+function findImmediateWin(who){
+  const cands = getCandidates(2);
+  for(const [r,c] of cands){
+    grid[r][c]=who;
+    const win = checkWin(r,c,who);
+    grid[r][c]=null;
+    if(win) return [r,c];
+  }
+  return null;
+}
+
+function aiTurn(){
+  if(gameOver) return;
+
+  let move = findImmediateWin('cpu');
+  if(!move) move = findImmediateWin('player');
+  if(!move){
+    const level1 = getCandidates(2)
+      .map(([r,c])=>({r,c,q:quickCellScore(r,c,'cpu')}))
+      .sort((a,b)=>b.q-a.q)
+      .slice(0,14);
+
+    let bestScore=-Infinity, bestMove=level1[0];
+    for(const cand of level1){
+      grid[cand.r][cand.c]='cpu';
+      let worst = Infinity;
+      const level2 = getCandidates(2)
+        .map(([r,c])=>({r,c,q:quickCellScore(r,c,'player')}))
+        .sort((a,b)=>b.q-a.q)
+        .slice(0,8);
+      if(level2.length===0){
+        worst = evaluateBoard();
+      } else {
+        for(const rep of level2){
+          grid[rep.r][rep.c]='player';
+          const val = evaluateBoard();
+          if(val<worst) worst = val;
+          grid[rep.r][rep.c]=null;
+        }
+      }
+      grid[cand.r][cand.c]=null;
+      if(worst>bestScore){ bestScore=worst; bestMove=cand; }
+    }
+    move = [bestMove.r, bestMove.c];
+  }
+
+  const [r,c]=move;
+  place(r,c,'cpu');
+  if(checkWin(r,c,'cpu')){ endRound('cpu'); return; }
+  if(isBoardFull()){ endRound(null); return; }
+  cActive = true;
+}
+
+function endRound(winner){
+  gameOver = true;
+  if(winner==='player') matchScore.player++;
+  else if(winner==='cpu') matchScore.cpu++;
+  updateScoreUI();
+
+  if(matchScore.player>=MATCH_TARGET || matchScore.cpu>=MATCH_TARGET){
+    const champ = matchScore.player>=MATCH_TARGET ? "Tú" : "CPU";
+    showOverlay(`Commit final: ${champ} ganó la partida (${matchScore.player} - ${matchScore.cpu}). Reiniciando módulo...`, true);
+  } else {
+    const txt = winner ? (winner==='player' ? "Compilación exitosa (ganaste la ronda)" : "Error de compilación (perdiste la ronda)")
+                        : "Sin resultado, tablero lleno";
+    showOverlay(txt, false);
+  }
+}
+
+function showOverlay(text, resetMatch){
+  document.getElementById('overlayText').textContent = text;
+  document.getElementById('overlayMsg').style.display='block';
+  document.getElementById('overlayMsg').dataset.reset = resetMatch ? "1":"0";
+}
+function closeOverlay(){
+  document.getElementById('overlayMsg').style.display='none';
+  const reset = document.getElementById('overlayMsg').dataset.reset==="1";
+  if(reset){ matchScore={player:0,cpu:0}; updateScoreUI(); }
+  initBoard();
+  cActive = true;
+  startTimer();
+}
+
+updateScoreUI();
+</script>
+</body>
+</html>
