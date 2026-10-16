@@ -1,4 +1,5 @@
 Repositorio de Videojuegos Web y Pasatiempos HTML
+
 Estado del Proyecto
 Nota de desarrollo: Este repositorio recopila proyectos personales, prototipos y desarrollos lúdicos web creados como pasatiempo y experimentación técnica.
 
