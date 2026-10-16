@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Llave y puerta</title>
+<style>
+:root{--tinta:#3f3560;--lila:#b9a8e8;--rosa:#f6a8c0;--rosaS:#d98aa5;--crema:#fff7f3;--rojo:#e8556f;
+ --suelo:#fff7f3;--pared:#c9b6ee;--rastro:#ffd9e4;--acc:#f6a8c0;--c:56px;--ca:#ff7d96;--cb:#58a8f2}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{color:var(--tinta);font-family:"Avenir Next Rounded","Nunito","Trebuchet MS",sans-serif;overflow-x:hidden;
+ background:radial-gradient(120% 80% at 15% 0%,#ffe3ec 0,transparent 55%),radial-gradient(100% 70% at 100% 100%,#e4dbff 0,transparent 55%),#fdf3ee}
+h1,h2,h3{margin:0;font-family:"Baloo 2","Trebuchet MS",sans-serif;letter-spacing:.01em}
+button{font:inherit;font-weight:700;color:var(--tinta);background:var(--acc);border:0;border-radius:14px;padding:9px 16px;cursor:pointer;box-shadow:0 3px 0 var(--rosaS);touch-action:manipulation}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--rosaS)}
+button:focus-visible{outline:3px solid var(--tinta);outline-offset:2px}
+button.pausaB{background:#7c66d1;color:#fff;box-shadow:0 4px 0 #5a47a8;font-size:1.02rem;padding:10px 16px;min-height:46px;border-radius:16px;animation:late 1.6s ease-in-out 3}
+@keyframes late{50%{transform:scale(1.07)}}
+#alm{position:fixed;left:8px;right:8px;top:8px;z-index:30;background:#ffe0e6;color:var(--tinta);border-radius:14px;padding:10px 14px;display:flex;gap:10px;align-items:center;font-weight:700;font-size:.9rem;box-shadow:0 3px 0 #e8a6b6}
+#alm[hidden]{display:none}
+#inv{background:#fff;border:2px solid var(--lila);border-radius:16px;padding:10px 14px;max-width:560px;text-align:center;font-size:.93rem;display:flex;flex-direction:column;gap:8px}
+#inv[hidden]{display:none}
+#inv button{padding:7px 12px;font-size:.88rem}
+.fl{background:#fff1c9;border-radius:26%;margin:1px;color:#d9902b}.fl.r{background:var(--rastro)}
+.po.dorm{background:#fff;color:var(--tinta);outline:3px dashed var(--h);outline-offset:1px;box-shadow:none;opacity:.6}
+button.suave{background:#fff;box-shadow:0 3px 0 #e6d9ee}
+button:disabled{opacity:.4;cursor:not-allowed}
+.pant{display:none;min-height:100%;padding:max(14px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom));flex-direction:column;align-items:center;gap:12px;animation:entra .35s ease-out}
+.pant.on{display:flex}
+@keyframes entra{from{opacity:0;transform:translateY(8px)}}
+/* inicio */
+#inicio{justify-content:center;text-align:center;gap:18px}
+#inicio h1{font-size:clamp(2.6rem,11vw,4.6rem);line-height:.95;color:var(--tinta)}
+#inicio h1 span{display:block;color:#e07a9e;transform:rotate(-2deg)}
+#inicio p{max-width:34ch;margin:0;opacity:.8}
+.logo{width:92px;height:92px;position:relative;animation:flota 3s ease-in-out infinite alternate}
+@keyframes flota{to{transform:translateY(-8px) rotate(4deg)}}
+.menuB{display:flex;flex-direction:column;gap:10px;min-width:220px}
+.menuB button{font-size:1.1rem;padding:12px 18px}
+/* selector */
+.cab{display:flex;gap:10px;align-items:center;width:min(640px,100%);justify-content:space-between}
+.cap{width:min(640px,100%);background:#ffffffb0;border-radius:22px;padding:14px;box-shadow:0 4px 0 #ecdcf0}
+.cap h3{font-size:1.15rem}.cap small{opacity:.7}
+.rej{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.nv{width:58px;height:62px;border-radius:14px;background:#fff;box-shadow:0 3px 0 #e6d9ee;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.nv b{font-size:1.1rem}.nv i{font-style:normal;font-size:.7rem;letter-spacing:1px;color:#e0a000;min-height:1em}
+.nv.ok{background:#e4f6e8;box-shadow:0 3px 0 #bddcc4}
+/* juego */
+#juego{gap:8px}
+.hud{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dato{background:#fff;border-radius:14px;padding:5px 12px;font-weight:700;box-shadow:0 2px 0 #ecdcd4;font-size:.92rem}
+.dato.al{background:#ffe0e6;color:var(--rojo)}
+#titulo{font-size:1.25rem;text-align:center}
+#aviso{background:#fff;border-radius:16px;padding:8px 14px;max-width:560px;text-align:center;line-height:1.35;box-shadow:0 2px 0 #ecdcd4;font-size:.93rem}
+#aviso:empty{display:none}
+#msg{min-height:1.4em;font-weight:700;text-align:center;max-width:560px;font-size:.93rem}
+#msg.mal{color:var(--rojo)}
+#marco{position:relative;background:var(--pared);padding:8px;border-radius:24px;box-shadow:0 6px 0 rgba(0,0,0,.14),0 18px 30px -14px rgba(63,53,96,.45);touch-action:none}
+#rej{position:relative;display:grid;border-radius:16px;overflow:hidden;background:var(--pared)}
+.c{width:var(--c);height:var(--c);display:flex;align-items:center;justify-content:center;position:relative}
+.c svg{width:70%;height:70%;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.f{background:var(--suelo);border-radius:26%;margin:1px}
+.f.r{background:var(--rastro)}
+.f.r.kk{background:#d4ecd8}
+.w{background:var(--pared);border-radius:26%;box-shadow:inset 0 -4px 0 rgba(0,0,0,.1)}
+.hi{background:linear-gradient(135deg,#e6f6ff,#cfeaff 60%,#f4fbff);border-radius:26%;margin:1px;box-shadow:inset 0 0 0 2px #fff}
+.hi::after{content:"";position:absolute;left:18%;top:14%;width:34%;height:6%;background:#fff;border-radius:9px;transform:rotate(-35deg);opacity:.9}
+.hi.r{background:linear-gradient(135deg,#ffe3ee,#ffd0e0)}
+.cr{background:repeating-linear-gradient(45deg,#9be3e0 0 6px,#c5f3f0 6px 12px);border-radius:26%;margin:1px;box-shadow:inset 0 0 0 2px #fff}
+.cro{background:var(--suelo);border-radius:26%;margin:1px;outline:2px dashed #7fd3cf;outline-offset:-4px}
+.kd{color:#e0a000}.ka{color:var(--ca)}.kb{color:var(--cb)}
+.kd svg,.ka svg,.kb svg{animation:bota 1.4s ease-in-out infinite alternate}
+@keyframes bota{to{transform:translateY(-3px) rotate(6deg)}}
+.pu{color:#9b86d6}.pu.ab{color:#e0a000;animation:brilla 1s ease-in-out infinite alternate}
+@keyframes brilla{from{transform:scale(.9)}to{transform:scale(1.1)}}
+.ce{color:#8a77c4}
+.ce.ca{color:var(--ca)}.ce.cb{color:var(--cb)}
+.sw{color:#2aa59f}
+.po{width:76%;height:76%;border-radius:50%;background:var(--tinta);color:#fff;box-shadow:0 0 0 calc(var(--c)*.06) var(--h);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:calc(var(--c)*.34)}
+.po.vis{opacity:.35}
+.sp{color:#c3b8d8}.sp.on{color:var(--rojo);background:#ffe0e6;border-radius:26%}.sp.av{outline:3px solid var(--rojo);outline-offset:-5px;border-radius:26%}
+.sp small{position:absolute;right:4px;bottom:1px;font-size:calc(var(--c)*.26);font-weight:800}
+#yo{position:absolute;left:8px;top:8px;width:var(--c);height:var(--c);pointer-events:none;z-index:3;transition:transform .11s ease-out}
+#yo i{position:absolute;inset:13% 13% 9%;border-radius:48% 48% 42% 42%;background:#8cc4fa;box-shadow:inset 0 -5px 0 rgba(0,0,0,.13),0 3px 0 rgba(0,0,0,.12)}
+#yo i::before,#yo i::after{content:"";position:absolute;top:34%;width:17%;height:21%;background:var(--tinta);border-radius:50%}
+#yo i::before{left:24%}#yo i::after{right:24%}
+#yo b{position:absolute;left:50%;top:60%;width:18%;height:9%;margin-left:-9%;border-bottom:3px solid var(--tinta);border-radius:0 0 12px 12px}
+#yo.sacude i{animation:sac .25s}
+@keyframes sac{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#yo.pop i{animation:pop .3s}
+@keyframes pop{50%{transform:scale(1.25)}}
+#yo.tp i{animation:tp .35s}
+@keyframes tp{0%{transform:scale(0) rotate(180deg)}100%{transform:none}}
+#yo.gana i{animation:salta .5s infinite alternate}
+@keyframes salta{to{transform:translateY(-10px) rotate(8deg)}}
+#yo.cae i{animation:cae .5s forwards}
+@keyframes cae{to{transform:scale(.2) rotate(120deg);opacity:0}}
+.ctl{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+.pad{display:grid;grid-template-columns:repeat(3,var(--pb));gap:8px;--pb:clamp(60px,19vw,84px)}
+.pad button{height:var(--pb);padding:0;font-size:1.6rem;border-radius:20px}.pad .u{grid-column:2}.pad .e{grid-column:2}
+.ex{display:flex;flex-direction:column;gap:8px}.ex button{min-height:44px}
+/* capas */
+#capa{position:fixed;inset:0;background:rgba(63,53,96,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:9;backdrop-filter:blur(2px)}
+#capa.on{display:flex}
+#caja{background:#fff;border-radius:26px;padding:24px 26px;max-width:380px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;animation:entra .3s;max-height:90vh;overflow:auto}
+#caja p{margin:0;line-height:1.4}
+.est{font-size:2rem;letter-spacing:6px;color:#e0a000}
+.est s{text-decoration:none;color:#e6dcef}
+.fila{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+label.sw2{display:flex;gap:10px;align-items:center;justify-content:center;font-weight:700}
+.conf{position:fixed;top:-10px;width:10px;height:14px;border-radius:3px;z-index:10;animation:cc 1.6s ease-in forwards;pointer-events:none}
+@keyframes cc{to{transform:translateY(105vh) rotate(540deg);opacity:.8}}
+pre{text-align:left;font-size:.75rem;background:#f5f0fb;border-radius:12px;padding:10px;max-height:40vh;overflow:auto;white-space:pre-wrap;margin:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section id="inicio" class="pant on">
+  <svg class="logo" viewBox="0 0 24 24" style="fill:none;stroke:#e0a000;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><circle cx="8" cy="9" r="4.5" fill="#fff0b8"/><path d="M11.4 12.4L20 20m-3-3l2.2-2.2m-5-1l2-2"/></svg>
+  <h1>Llave<span>y puerta</span></h1>
+  <p>Recoge las llaves, no pises tu propio rastro y encuentra la salida.</p>
+  <div class="menuB">
+    <button id="bJugar">Continuar</button>
+    <button id="bNiveles" class="suave">Capítulos</button>
+    <button id="bDesafio" class="suave">Modo Desafío</button>
+    <button id="bAjustes" class="suave">Ajustes</button>
+    <button id="bCreditos" class="suave">Créditos</button>
+  </div>
+</section>
+
+<section id="selector" class="pant">
+  <div class="cab"><button id="sVolver" class="suave">‹ Inicio</button><h2 id="sTit">Capítulos</h2><span id="sTotal" class="dato"></span></div>
+  <div id="caps"></div>
+</section>
+
+<section id="juego" class="pant">
+  <div class="cab"><button id="gMenu" class="pausaB" aria-label="Pausar el juego" title="Pausar (Esc o P)">⏸ Pausar</button><h2 id="titulo"></h2><span id="gCap" class="dato"></span></div>
+  <div class="hud"><span class="dato" id="dPasos"></span><span class="dato" id="dLlaves"></span><span class="dato" id="dTiempo">0:00</span><span class="dato" id="dPar"></span></div>
+  <div id="aviso"></div><div id="msg"></div><div id="inv" hidden></div>
+  <div id="marco"><div id="rej"></div><div id="yo"><i></i><b></b></div></div>
+  <div class="ctl">
+    <div class="pad"><button class="u" data-a="U" aria-label="Arriba">▲</button><button data-a="L" aria-label="Izquierda">◀</button><button data-a="D" aria-label="Abajo">▼</button><button data-a="R" aria-label="Derecha">▶</button></div>
+    <div class="ex"><button id="bUndo">Deshacer (Z)</button><button id="bPista" class="suave" hidden>💡 Pista</button><button id="bEsp" class="suave">Esperar (Espacio)</button><button id="bRei" class="suave">Reiniciar (R)</button><button id="bSol" class="suave" hidden>Solución (dev)</button></div>
+  </div>
+</section>
+
+<div id="alm" hidden><span>⚠️ El guardado no está disponible en este navegador (modo privado o almacenamiento bloqueado): tu progreso se perderá al cerrar la página.</span><button id="almX" class="suave">OK</button></div>
+<div id="capa"><div id="caja"></div></div>
+<script id="core">
+
+ Leyenda: # muro · S inicio · D puerta · k llave dorada (obligatoria) · a/b llaves coral/azul · A/B cerraduras
+ I hielo · * interruptor · M cristal cerrado (se abre) · N cristal abierto (se cierra) · 1 2 3 portales (pares)
+ p pincho (2 seguros/2 activos) · q pincho lento (3/3). s = pasos de holgura sobre el óptimo; par y sol = longitud óptima y solución de referencia (verificadas por las pruebas). */
+const CAPS=[
+ {n:'Jardín',sub:'Llave, puerta y rastro',suelo:'#fff7f3',pared:'#c9b6ee',rastro:'#ffd9e4'},
+ {n:'Espinas y engaños',sub:'Portales y pinchos',suelo:'#fff4f8',pared:'#e5a6c3',rastro:'#ffd2e0'},
+ {n:'Cerraduras',sub:'Llaves de color que se gastan',suelo:'#fffaf0',pared:'#f0c98a',rastro:'#ffe3c4'},
+ {n:'Hielo',sub:'Deslizarse sin frenar',suelo:'#f6fbff',pared:'#9ccbf0',rastro:'#d6ecff'},
+ {n:'Cristal',sub:'Mecanismos y combinaciones',suelo:'#f5fffd',pared:'#8fd6cf',rastro:'#cdf3ee'}
+];
+const LV=[
+ {c:0,t:'Primer paseo',s:4,par:5,sol:'DDLLL',h:'Muévete con flechas, WASD o los botones. Recoge la llave dorada y entra por la puerta: sin llave no se abre.',r:['.....','#..S.','....#','D..k.','...#.']},
+ {c:0,t:'Tres llaves',s:4,par:8,sol:'DDRRURDR',h:'Tu camino se tiñe de rosa y no puedes pisarlo otra vez; chocar con él cuenta como esperar un paso. Hay tres llaves: el orden de visita importa.',r:['.S...#','...kk.','#..k.D','##....','##.#..']},
+ {c:0,t:'Rodeo',s:4,par:7,sol:'DRDRURU',h:'Antes de moverte, traza la ruta completa: cada casilla que pisas deja de estar disponible para volver.',r:['...###','##.###','##S.#D','#.....','..#.k.']},
+ {c:0,t:'El camino largo',s:4,par:6,sol:'RDDRRD',h:'Una ruta que parece buena puede dejarte sin salida. Deshacer es gratis: úsalo para probar ideas.',r:['..##..','#..##.','##....','##S..#','.##k#.','.#....','....#D']},
+ {c:0,t:'Pasos contados',s:4,par:9,sol:'DDRDLLLLL',h:'Cuenta los pasos que te quedan antes de comprometerte con un rodeo.',r:['......','...#S.','.#....','......','D....k','..##..','#.#...']},
+ {c:0,t:'Dos llaves',s:4,par:10,sol:'RRRDLDRDDR',h:'Con dos llaves, elige primero la que te deje un camino de vuelta hacia la puerta.',r:['S...#','...k#','.#k.#','.##..','.#..D','.....','..#.#']},
+ {c:1,t:'Atajo dudoso',s:3,par:10,sol:'RDLLLULUUU',h:'Un portal te lleva a su pareja (mismo color y letra) y ambos extremos quedan en tu rastro. Entrar en el momento equivocado puede dejarte sin salida.',r:['...##D.','.#..#..','1#...1.','..#S.#.','....k.#']},
+ {c:1,t:'Pausa en las espinas',s:3,par:10,sol:'UUWLUULLLD',h:'Los pinchos alternan: el número indica cuántos pasos faltan para que cambien, y un borde rojo avisa de que se activarán en el próximo paso. Espacio espera un paso.',r:['#.#..#','..p.k.','.D1..#','...#p1','..S..#']},
+ {c:1,t:'Portal sin retorno',s:3,par:13,sol:'LUULDDLDDDDRR',h:'Mira qué casillas dejas atrás al cruzar un portal: ya no podrás volver por ellas.',r:['k...1#.','..#.p..','1.S..#.','....#..','..#..D.']},
+ {c:1,t:'Ritmo de pinchos',s:3,par:9,sol:'RDWLLLULU',h:'Aquí el reto es el ritmo: cada pincho tiene su propio ciclo, y esperar en el sitio correcto importa.',r:['....#','.S...','D#1#q','..#..','qkpp1']},
+ {c:1,t:'Entrar a tiempo',s:3,par:12,sol:'UDUUDDRDLLUL',h:'Entrar al portal antes de tiempo puede cerrarte la solución: decide cuándo.',r:['...1p','..1S#','##.p.','...##','D..k.','#..p.']},
+ {c:1,t:'Esperar con el rastro',s:3,par:15,sol:'DUURDRDRDRRUUUU',h:'Chocar con tu propio rastro cuenta como esperar un paso: a veces es útil. Y los portales siguen castigando la prisa.',r:['...p#D','.1.##.','#k.#..','S#..2q','.1#...','.2.#q.']},
+ {c:2,t:'Una cerradura',s:3,par:14,sol:'URDDDDRRRUUULL',h:'Una llave de color solo abre su cerradura (mismo color) y se gasta al usarla. La puerta sigue pidiendo todas las llaves doradas.',r:['.k.#.','S.Dk.','...#.','#..#.','.aA..']},
+ {c:2,t:'Gastar la llave',s:3,par:15,sol:'LDDDDDDLUULUUUU',h:'Abrir una cerradura gasta la llave: hacerlo en el momento equivocado puede dejarte sin salida.',r:['D.aS.','.#.A#','k#...','.#..#','A..##','....#','#.k##']},
+ {c:2,t:'Dos colores',s:3,par:15,sol:'RRUULUUULLDDDRD',h:'Dos colores: cada llave abre solo su cerradura. Decide qué cerradura abres antes de gastar la llave.',r:['.#..#','.b...','k#.#.','...#B','B....','#D...','.S.k.']},
+ {c:2,t:'Orden de recogida',s:3,par:17,sol:'RURRRRUULLLLLDRRR',h:'Recoger una llave de color demasiado pronto puede cerrarte el camino: piensa qué casillas necesitas para volver.',r:['.#.A.#A','......a','.kB.D.k','#B....b','#S..#.#']},
+ {c:2,t:'Camino de regreso',s:3,par:16,sol:'RRDDDLLLDRDRRURU',h:'Tu rastro es el obstáculo: reserva el camino de regreso a la puerta.',r:['.#.#.','.S...','B##.#','.##..','..abD','k....','#.Ak#']},
+ {c:2,t:'Desde la puerta',s:3,par:18,sol:'RRDLLLULDLDDDRRRUU',h:'Empieza pensando desde la puerta hacia atrás.',r:['#..#..#','#b.S.k#','.B.....','.#.D#..','..#..#.','...k.#.']},
+ {c:3,t:'Primer resbalón',s:3,par:14,sol:'DDDDRDLLUUUUUL',h:'En el hielo te deslizas hasta que un muro, el borde o tu rastro te frenan. Cada casilla que cruzas queda marcada. Deslizarte donde no debes puede cerrarte el camino.',r:['.DIS#I','.....I','.#.k#.','#I....','II...I','.I..k#']},
+ {c:3,t:'Tres deslizamientos',s:3,par:13,sol:'RRRUUUULDDLUR',h:'Calcula dónde terminas antes de empujarte: los deslizamientos ocupan casillas que luego necesitarás.',r:['I..k.#','###...','#.DI..','I.II.#','.S..kI']},
+ {c:3,t:'Rastro de hielo',s:3,par:16,sol:'RRURURDDLDLLLDDL',h:'Un deslizamiento largo marca muchas casillas de golpe. ¿Te dejará pasar después?',r:['.#..II#','I..k#..','S.k#..I','.....#.','#.#..#.','DI#....']},
+ {c:3,t:'Frenar con el rastro',s:3,par:14,sol:'DRDRRUURUULLLD',h:'Si no hay muro para frenarte, tu propio rastro puede hacerlo.',r:['....I','#D#..','S.#.k','..I.I','I..k#','.III.']},
+ {c:3,t:'Hielo y cerradura',s:3,par:19,sol:'DDDDDLLLLURUUURRDDD',h:'Hielo y cerradura: un deslizamiento no se puede detener a mitad de camino.',r:['.I...S#','#k#...#','...I#..','#I.A..A','..#D#..','k.I.a..','#.#.I.#']},
+ {c:3,t:'Deslizar y abrir',s:3,par:19,sol:'DRDDLULULULLDRDDRDL',h:'Abrir la cerradura en mal momento o deslizarte donde no debes: ambas decisiones pueden ser irreversibles.',r:['.B..S.','kI....','#.#...','#I#Bbk','I.I..#','.#D.II']},
+ {c:4,t:'El interruptor',s:2,par:15,sol:'DLDLDDLULULUURR',h:'Pisar el interruptor abre los cristales rellenos (M) y cierra los vacíos (N). Pisado en mal momento, puede dejarte sin salida.',r:['.....#.#','..#.#..#','...D##S.','..N.....','*.M#.*#.','.M..kN.#','..#.k.##','....#..#']},
+ {c:4,t:'Cristales y hielo',s:2,par:22,sol:'DRDDLLDLUURUULUURDRRRU',h:'El deslizamiento puede cruzar un interruptor y cambiar el tablero a mitad de camino.',r:['...#D#','I..*N#','.##IS.','M.##II','#*M#.k','..##..','N.II..','.k.#.N']},
+ {c:4,t:'Portal y cristal',s:2,par:17,sol:'RDLLDDDLLURRLLUUR',h:'Portal e interruptor: el orden en que los uses cambia las rutas que te quedan.',r:['####S..','###.#I.','N#.*...','..#..D#','.k1M.#.','MI.k.*1','..#....','.....#.']},
+ {c:4,t:'Dos interruptores',s:2,par:18,sol:'DDDLLLDLUUUURDRRRU',h:'Hay dos interruptores: pisarlos cambia el tablero dos veces.',r:['#k.#MDS','...**..','#..##..','....I..','#k.I#.I','NI..##I']},
+ {c:4,t:'Cristal con espinas',s:2,par:23,sol:'LRRDURUUDLLDDDRURRURUUU',h:'Pinchos, cristales, hielo y una cerradura. Piensa el orden antes de moverte.',r:['AaS.DM','#p....','..*#N#','.I#.A.','.*.q..','k.M.IN']},
+ {c:4,t:'Gran final',s:2,par:21,sol:'UUUUDRDRRUULLLLLDLRLD',h:'Todo lo aprendido: portal, cerradura, interruptor, hielo y espinas.',r:['##..A..k','p.pA..#.','D#1.....','*..#a#.#','#..M*#..','..#.I.#.','..1.S.N#']}
+];
+const CHS=[
+ {n:"A · Desafíos",sub:"Flechas y portales dormidos: aprende jugando",suelo:"#f4fff7",pared:"#9fd8b5",rastro:"#cdeed8"},
+ {n:"B · Desafíos avanzados",sub:"Varias reglas en un mismo tablero",suelo:"#fff8f0",pared:"#f0a98a",rastro:"#ffd8c4"},
+ {n:"C · Desafíos extremos",sub:"Planifica muchos pasos por adelantado",suelo:"#faf5ff",pared:"#a48bd6",rastro:"#e3d4fa"}];
+/* Modo Desafío: flechas (> < ^ v) y portales dormidos (4 5, solo funcionan con el interruptor activado). Generados y resueltos con el solucionador. */
+const CH=[
+ {"c": 0, "t": "Corriente", "s": 3, "par": 9, "sol": "UULDDDLLL", "h": "Las casillas con flecha te empujan una casilla más en su dirección. Experimenta.", "r": ["..#^#", "<..k.", "#....", "#...S", "D.>.."]},
+ {"c": 0, "t": "Calles de flechas", "s": 3, "par": 12, "sol": "DLUUUULDLDLD", "h": "", "r": ["#>.k..", "....<#", "..>..<", "D#.S#.", "#..k.."]},
+ {"c": 0, "t": "Portal dormido", "s": 3, "par": 12, "sol": "ULLDLUUURRRU", "h": "Los portales de aro punteado están dormidos. ¿Qué los despierta?", "r": ["4...#D", "..4...", "..*.##", "k.#S..", "....#."]},
+ {"c": 0, "t": "Corriente y portal", "s": 3, "par": 13, "sol": "ULURRDRDLLLRD", "h": "", "r": ["...#..", "k..#..", "...v4.", ".S#*#D", ".v...#", "4....."]},
+ {"c": 0, "t": "Primer examen", "s": 3, "par": 17, "sol": "LLLDLDDDRURRUULLR", "h": "", "r": ["..<.4D", "#...S#", "kk4.A#", "..##..", "...a..", ".>*..."]},
+ {"c": 1, "t": "Doble llave de agua", "s": 2, "par": 18, "sol": "DRRURURRDDUUUURDDR", "h": "", "r": ["<.k....", "^..#.##", "...D#..", "p..#..k", "S4>...*", "....#.4"]},
+ {"c": 1, "t": "Cruce de corrientes", "s": 2, "par": 17, "sol": "DRRDDDLLLLLURRURR", "h": "", "r": ["..>.4.D", ".#S..^A", ">...*#.", ".#4#>.#", "...a...", "k....k#"]},
+ {"c": 1, "t": "Cristales dormidos", "s": 2, "par": 19, "sol": "LLLLLDRDRRDRDDLULUL", "h": "", "r": ["kM..*S#", "...N#>.", "D....#.", "^.#..#.", "..44...", "#...k<."]},
+ {"c": 1, "t": "Pinchos en la corriente", "s": 2, "par": 18, "sol": "LLDDRRRRULLDLLLLUL", "h": "", "r": [".....>4", ".D.#vkp", "*q.....", "....S##", ".^.#4.k", "#..*..."]},
+ {"c": 1, "t": "Hielo y flecha", "s": 2, "par": 16, "sol": "URURULLLLLDDRRDR", "h": "", "r": [".#...II", "k>....A", "...#.ka", "..4*..^", "..4S#.^", "...D.#.", "..I.##."]},
+ {"c": 2, "t": "Dos portales dormidos", "s": 2, "par": 16, "sol": "DDLLLLLDDDRRDRUU", "h": "", "r": ["#4...S.", "#.....#", ".....vD", "k#*>^k.", "...#.5.", "..*.#..", "..5.4.."]},
+ {"c": 2, "t": "Cerradura en la corriente", "s": 2, "par": 17, "sol": "DRRURRRDDLDDDRULD", "h": "", "r": ["#SA.k.v", "....#.k", ".4#....", "Dv...<.", "...v*..", "#..#.4.", "..a..k#"]},
+ {"c": 2, "t": "Cristal, hielo y flechas", "s": 2, "par": 18, "sol": "LDDLLULDDDRRRRRULU", "h": "", "r": ["......S", "I..#.^.", "...v*.#", ".k.4#.#", "..4NMD#", "...#...", "...^..k"]},
+ {"c": 2, "t": "Tormenta de pinchos", "s": 2, "par": 18, "sol": "LDLDDRDLLUULUURRDD", "h": "", "r": [".......", "p.^.^.p", ".*S.#D#", "...k.##", ".#A*v.5", "4..a.k.", "..45#.."]},
+ {"c": 2, "t": "La gran corriente", "s": 2, "par": 20, "sol": "LUURDRRRRRDDDLUULLDL", "h": "", "r": [".#N.k5pa", "#..D..v#", ".k#.<.M.", ".....<.q", ".S.#5^*.", "...4A...", ".#.#*k.4"]}
+];
+const DIR={U:[0,-1],D:[0,1],L:[-1,0],R:[1,0]};
+const ARR={'>':[1,0],'<':[-1,0],'^':[0,-1],'v':[0,1]},DORM={4:1,5:1};
+const BITS={a:1,b:2,A:1,B:2};
+function parse(def){
+ const m=def.r.length,n=def.r[0].length,g=[],pt={};let st=-1,nk=0;
+ def.r.forEach((row,y)=>{if(row.length!==n)throw Error('fila de ancho distinto');
+  for(let x=0;x<n;x++){let ch=row[x];const i=y*n+x;if(ch==='S'){st=i;ch='.'}if(ch==='k')nk++;
+   if('12345'.includes(ch))(pt[ch]=pt[ch]||[]).push(i);g.push(ch)}});
+ const link={};for(const k in pt){if(pt[k].length!==2)throw Error('portal '+k+' sin pareja');link[pt[k][0]]=pt[k][1];link[pt[k][1]]=pt[k][0]}
+ return {n,m,g,st,nk,link,lim:Infinity,def};
+}
+const init=lv=>{const vis=new Uint8Array(lv.n*lv.m);vis[lv.st]=1;return {p:lv.st,t:0,vis,inv:0,kk:0,sw:0}};
+const clon=s=>({p:s.p,t:s.t,vis:s.vis.slice(),inv:s.inv,kk:s.kk,sw:s.sw});
+const solido=(lv,s,i)=>{const c=lv.g[i];return c==='#'||(c==='M'&&!s.sw)||(c==='N'&&s.sw)};
+const pinchoOn=(c,t)=>c==='p'?t%4>=2:c==='q'?t%6>=3:false;
+const pinchoFalta=(c,t)=>{const P=c==='p'?2:3,f=t%(2*P);return f>=P?2*P-f:P-f};
+
+ Devuelve {err} (acción inválida, sin coste), o {s, ev, win, dead}. Nunca modifica su entrada. */
+function step(lv,s,a){
+ const q=clon(s),ev=[];
+ if(a==='W'){q.t++;ev.push(['esp'])}
+ else{
+  let [dx,dy]=DIR[a];let x=q.p%lv.n,y=(q.p/lv.n)|0,primero=true,mov=false;
+  for(;;){
+   const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=lv.n||ny>=lv.m){if(primero)return{err:'muro'};break}
+   const i=ny*lv.n+nx,c=lv.g[i];
+   if(solido(lv,q,i)){if(primero)return{err:'muro'};break}
+   if(q.vis[i]){if(primero){q.t++;ev.push(['rastro'])}break}
+   if(c==='D'&&q.kk<lv.nk){if(primero)return{err:'puerta',falta:lv.nk-q.kk};break}
+   if(c==='A'||c==='B'){const b=BITS[c];if(!(q.inv&b)){if(primero)return{err:'cerradura',c};break}q.inv&=~b;ev.push(['abre',c])}
+   x=nx;y=ny;q.p=i;q.vis[i]=1;primero=false;mov=true;
+   if(c==='k'){q.kk++;ev.push(['llave'])}
+   else if(c==='a'||c==='b'){q.inv|=BITS[c];ev.push(['llaveC',c])}
+   else if(c==='*'){q.sw^=1;ev.push(['inter'])}
+   else if(ARR[c]){[dx,dy]=ARR[c];ev.push(['flecha'])}
+   else if(lv.link[i]!==undefined&&!q.vis[lv.link[i]]&&(!DORM[c]||q.sw)){q.p=lv.link[i];q.vis[q.p]=1;ev.push(['portal',i,q.p]);break}
+   if(c==='D')break;
+   if(c!=='I'&&!ARR[c])break;
+   ev.push(['res']);
+  }
+  if(mov)q.t++;
+ }
+ const win=lv.g[q.p]==='D';
+ let dead=null;
+ if(!win){if(pinchoOn(lv.g[q.p],q.t))dead='pincho';else if(q.t>=lv.lim)dead='pasos'}
+ return {s:q,ev,win,dead};
+}
+/* BFS por pasos: la primera solución hallada es la de menor número de pasos. */
+function solve(lv,from,cap){
+ const s0=from||init(lv),key=s=>s.p+'|'+(s.t%12)+'|'+s.inv+s.kk+s.sw+'|'+s.vis.join('');
+ const Q=[{s:s0,par:-1,a:''}],seen=new Set([key(s0)]);cap=cap||400000;
+ for(let h=0;h<Q.length;h++){
+  if(Q.length>cap)return{path:null,agotado:false};
+  for(const a of 'UDLRW'){
+   const r=step(lv,Q[h].s,a);if(r.err||r.dead)continue;
+   if(r.win){let p=a,j=h;while(Q[j].par>=0){p=Q[j].a+p;j=Q[j].par}return{path:p,steps:r.s.t}}
+   const k=key(r.s);if(seen.has(k))continue;seen.add(k);Q.push({s:r.s,par:h,a});
+  }
+ }
+ return{path:null,agotado:true};
+}
+function nivel(i,relajado,arr){const d=(arr||LV)[i],lv=parse(d);lv.par=d.par;lv.lim=relajado?Infinity:lv.par+d.s;return lv}
+
+const claveT=s=>s.p+'|'+s.t+'|'+s.inv+s.kk+s.sw+'|'+s.vis.join('');
+function vivos(lv,cap){
+ cap=cap||60000;const ids=new Map(),S=[],suc=[],s0=init(lv);ids.set(claveT(s0),0);S.push(s0);
+ for(let i=0;i<S.length;i++){if(S.length>cap)return null;const L=[];suc.push(L);
+  for(const a of 'UDLRW'){const r=step(lv,S[i],a);if(r.err||r.dead)continue;if(r.win){L.push(-1);continue}
+   const k=claveT(r.s);let j=ids.get(k);if(j===undefined){j=S.length;ids.set(k,j);S.push(r.s)}L.push(j)}}
+ const v=new Uint8Array(S.length);for(let i=S.length-1;i>=0;i--)v[i]=suc[i].some(j=>j<0||v[j])?1:0;
+ const ok=new Set();ids.forEach((i,k)=>{if(v[i])ok.add(k)});return{viable:s=>ok.has(claveT(s)),n:S.length};
+}
+function reproducir(lv,path){let s=init(lv),r;for(const a of path){r=step(lv,s,a);if(r.err||r.dead)return null;s=r.s;if(r.win)return s}return null}
+
+
+function runTests(){
+ const out=[];const T=(n,ok,x)=>out.push({n,ok:!!ok,x:x||''});
+ let sd=12345;const rnd=()=>{sd|=0;sd=sd+0x6D2B79F5|0;let t=Math.imul(sd^sd>>>15,1|sd);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+ const dump=s=>JSON.stringify([s.p,s.t,s.inv,s.kk,s.sw,[...s.vis]]);
+ T('Hay exactamente 30 niveles',LV.length===30,LV.length);
+ T('Seis niveles por capítulo (5 capítulos)',CAPS.every((_,c)=>LV.filter(l=>l.c===c).length===6));
+ T('No hay mapas repetidos',new Set(LV.map(l=>l.r.join('/'))).size===LV.length);
+ LV.forEach((d,i)=>{const N='Nivel '+(i+1);let lv;
+  try{lv=parse(d)}catch(e){T(N+' carga',false,e.message);return}
+  const txt=d.r.join(''),nS=txt.split('S').length-1,nD=txt.split('D').length-1;
+  T(N+' carga y tiene estructura válida',nS===1&&nD===1&&lv.nk>=1,'S='+nS+' D='+nD+' llaves='+lv.nk);
+  const sol=solve(parse(d),null,800000);
+  T(N+' tiene solución',!!sol.path);
+  T(N+' el par guardado es el óptimo real',sol.path&&sol.steps===d.par,'par='+d.par+' real='+(sol.steps));
+  const lv2=nivel(i,false);
+  const fin=reproducir(lv2,d.sol);
+  T(N+' la solución guardada gana con las reglas reales',!!fin&&fin.t===d.par&&lv2.g[fin.p]==='D'&&fin.kk===lv2.nk);
+  T(N+' la solución cabe en el límite',d.par<=lv2.lim&&d.s>=2,'límite '+lv2.lim);
+  // reiniciar/deshacer: reproducir dos veces da el mismo resultado y cada paso no muta el estado previo
+  let s=init(lv2),ok=true;const hist=[];
+  for(const a of d.sol){const antes=dump(s);hist.push(s);const r=step(lv2,s,a);if(dump(s)!==antes||r.err)ok=false;s=r.s}
+  const s2=reproducir(lv2,d.sol);T(N+' reiniciar reproduce el mismo estado final',ok&&!!s2&&dump(s2)===dump(s));
+  let un=true;for(let k=hist.length-1;k>=0&&un;k--){const r=step(lv2,hist[k],d.sol[k]);if(dump(r.s)!==dump(k+1<hist.length?hist[k+1]:s))un=false}
+  T(N+' deshacer: cada estado guardado reproduce su sucesor',un);
+  // invariantes en partidas aleatorias (semilla fija)
+  let inv=true,msg='';
+  for(let g=0;g<150&&inv;g++){let st=init(lv2);
+   for(let k=0;k<45;k++){const a='UDLRW'[Math.floor(rnd()*5)],antes=dump(st),r=step(lv2,st,a);
+    if(dump(st)!==antes){inv=false;msg='muta';break}
+    if(r.err)continue;const q=r.s;
+    if(solido(lv2,q,q.p)&&!(lv2.g[q.p]==='M'||lv2.g[q.p]==='N')){inv=false;msg='sobre muro';break}
+    if(!q.vis[q.p]||q.t!==st.t+1||q.kk>lv2.nk||q.inv<0||q.inv>3){inv=false;msg='estado incoherente';break}
+    if(r.win&&q.kk<lv2.nk){inv=false;msg='ganó sin llaves';break}
+    if(r.dead||r.win)break;st=q}}
+  T(N+' invariantes en 150 partidas aleatorias',inv,msg);
+ });
+ const run=(rows,acts,lim)=>{const lv=parse({r:rows});if(lim)lv.lim=lim;let s=init(lv),r,last={};for(const a of acts){r=step(lv,s,a);if(r.err){last=r;continue}s=r.s;last=r;if(r.win||r.dead)break}return{lv,s,last}};
+ let t=run(['SkD'],'RR');T('Ganar con la llave recogida',t.last.win);
+ t=run(['S.D','.k.'],'RR');T('No se gana sin la llave obligatoria',!t.last.win&&t.last.err==='puerta');
+ t=run(['SaAkD'],'RRRR');T('Llave de color abre su cerradura y se consume',t.s.inv===0&&t.last.win);
+ t=run(['SAak.D'],'R');T('Cerradura sin llave rechaza el paso (sin coste)',t.last.err==='cerradura'&&t.s.t===0);
+ t=run(['S1.1kD'],'R');T('Portal teletransporta a su pareja',t.s.p===3,'pos='+t.s.p);
+ t=run(['S1.1kD'],'R');T('Portal: ambos extremos quedan en el rastro',t.s.vis[1]===1&&t.s.vis[3]===1);
+ t=run(['SIIIkD'],'R');T('Hielo desliza hasta frenar (sobre llave)',t.s.p===4&&t.s.kk===1&&t.s.t===1,'pos='+t.s.p);
+ t=run(['SIII#kD'],'R');T('Hielo frena ante un muro',t.s.p===3,'pos='+t.s.p);
+ t=run(['S.IIkD'],'RRL');T('Hielo: el rastro frena el deslizamiento y no se puede reentrar',t.s.p===4||t.s.p===3,'pos='+t.s.p);
+ t=run(['S*MkD'],'RR');T('Interruptor abre cristal M',t.s.sw===1&&t.s.p===2);
+ t=run(['S.*NkD'],'RRR');T('Interruptor cierra cristal N',t.last.err==='muro'&&t.s.p===2,'pos='+t.s.p);
+ t=run(['S.p.kD'],'RR');T('Pincho activo mata al llegar',t.last.dead==='pincho');
+ t=run(['S.pkD'],'WWRR');T('Esperar evita el pincho (WWRR llega en t=4, pincho inactivo)',!t.last.dead&&t.s.p===2&&t.s.t===4&&!pinchoOn('p',t.s.t));
+ t=run(['S.pkD'],'WRR');T('Sin esperar lo bastante, el pincho mata (WRR llega en t=3, activo)',t.last.dead==='pincho'&&pinchoOn('p',3));
+ t=run(['S.pkD'],'RR');T('Sin esperar nada, el pincho mata (RR llega en t=2, activo)',t.last.dead==='pincho');
+ t=run(['SpkD'],'RW');T('Quedarse sobre un pincho cuando se activa también mata',t.last.dead==='pincho'&&t.s.p===1);
+ T('Pinchos: los ciclos p (4) y q (6) no colisionan en la clave t%12',pinchoOn('p',2)&&!pinchoOn('p',4)&&pinchoOn('q',3)&&!pinchoOn('q',6)&&pinchoOn('q',9)&&!pinchoOn('q',12));
+ t=run(['S..kD'],'RRR',2);T('Límite de pasos termina la partida',t.last.dead==='pasos');
+ t=run(['Sk.D'],'RL');T('Chocar con el rastro cuenta como esperar',t.s.t===2&&t.s.p===1,'t='+t.s.t);
+ const lv=parse({r:['S..kD']}),s0=init(lv),snap=dump(s0);step(lv,s0,'R');step(lv,s0,'U');T('Acciones válidas e inválidas no mutan el estado anterior',dump(s0)===snap);
+ let mal=false;try{parse({r:['S1.k','D..']})}catch(e){mal=true}T('Portal sin pareja se detecta al cargar',mal);
+ const v=vivos(nivel(0,false));T('vivos(): el estado inicial del nivel 1 es viable',v&&v.viable(init(nivel(0,false))));
+
+ T('Modo Desafío: exactamente 15 niveles, 5 por sección',CH.length===15&&[0,1,2].every(c=>CH.filter(l=>l.c===c).length===5));
+ T('Modo Desafío: no hay mapas repetidos ni iguales a la campaña',new Set(CH.map(l=>l.r.join('/')).concat(LV.map(l=>l.r.join('/')))).size===45);
+ CH.forEach((d,i)=>{const N='Desafío '+(i+1);let lv;try{lv=parse(d)}catch(e){T(N+' carga',false,e.message);return}
+  const txt=d.r.join('');T(N+' estructura válida',txt.split('S').length===2&&txt.split('D').length===2&&lv.nk>=1);
+  const sol=solve(parse(d),null,800000);T(N+' par guardado = óptimo real',sol.path&&sol.steps===d.par,'par='+d.par+' real='+sol.steps);
+  const l2=nivel(i,false,CH),fin=reproducir(l2,d.sol);T(N+' la solución guardada gana',!!fin&&fin.t===d.par&&l2.g[fin.p]==='D'&&fin.kk===l2.nk);
+  let s=init(l2),ev=new Set();for(const a of d.sol){const r=step(l2,s,a);r.ev.forEach(e=>ev.add(e[0]));s=r.s}
+  if(d.c===0&&i<2)T(N+' la solución usa flechas',ev.has('flecha'));
+  if(/[45]/.test(txt))T(N+' la solución usa un portal dormido (con interruptor)',ev.has('portal')&&ev.has('inter'));
+  T(N+' cabe en el límite',d.par<=l2.lim);
+ });
+ let a1=run(['S>kD'],'R');T('Flecha: empuja una casilla más (recoge la llave)',a1.s.p===2&&a1.s.kk===1,'pos='+a1.s.p);
+ a1=run(['S>.kD'],'R');T('Flecha: tras el empuje se detiene en suelo normal',a1.s.p===2,'pos='+a1.s.p);
+ a1=run(['S>>#kD'],'R');T('Flechas encadenadas frenan ante un muro',a1.s.p===2,'pos='+a1.s.p);
+ a1=run(['S<kD'],'R');T('Flecha que apunta al rastro frena en ella',a1.s.p===1,'pos='+a1.s.p);
+ a1=run(['S4.4kD'],'R');T('Portal dormido no teletransporta sin interruptor',a1.s.p===1,'pos='+a1.s.p);
+ a1=run(['S*4.4kD'],'RR');T('Portal dormido funciona con el interruptor activo',a1.s.p===4,'pos='+a1.s.p);
+ return out;
+}
+if(typeof module!=='undefined')module.exports={CH,CHS,LV,CAPS,parse,init,step,solve,nivel,vivos,runTests,reproducir};
+</script>
+
+<script>
+if(typeof document!=='undefined'){
+const $=id=>document.getElementById(id);
+const DEV=/[?&]dev=1/.test(location.search);
+const KS='llp5-30',KP='llp5-partida',KD='llp5-desafio',KH='llp5-ayuda';
+let ALM=true,MODO='c';
+/* ---- almacenamiento seguro: nunca rompe el juego y avisa si no está disponible ---- */
+try{localStorage.setItem('llp5-t','1');localStorage.removeItem('llp5-t')}catch(e){ALM=false}
+function lee(k,def){try{const r=localStorage.getItem(k);if(!r)return def;try{const o=JSON.parse(r);return o&&typeof o==='object'?o:def}catch(e){try{localStorage.setItem(k+'-copia',r)}catch(_){}return def}}catch(e){ALM=false;return def}}
+function esc(k,v){if(!ALM)return avisoALM();try{localStorage.setItem(k,JSON.stringify(v))}catch(e){ALM=false;avisoALM()}}
+function avisoALM(){$('alm').hidden=false}
+/* migración: los datos v5 (llp5-30) se conservan tal cual y solo se añaden campos */
+const SV=Object.assign({done:{},relajado:false,visto:{}},lee(KS,{}));SV.v=6;if(!SV.done||typeof SV.done!=='object')SV.done={};
+const DS=Object.assign({done:{}},lee(KD,{}));if(!DS.done||typeof DS.done!=='object')DS.done={};
+let PA=lee(KP,{}),HI=Object.assign({rei:{},und:{},prox:{},ped:{}},lee(KH,{}));
+const guardar=()=>{esc(KS,SV);esc(KD,DS)};
+const guardaHI=()=>esc(KH,HI);
+let VIV=null,lv,S,H,A,cur=0,undos=0,acum=0,ini=0,bloq=false,enPausa=false,reloj=0;
+const LISTA=()=>MODO==='c'?LV:CH,SEC=()=>MODO==='c'?CAPS:CHS,DONE=()=>MODO==='c'?SV.done:DS.done,DEF=()=>LISTA()[cur];
+const clave=()=>MODO+cur,tiempo=()=>acum+(ini?Date.now()-ini:0);
+const freezeT=()=>{if(ini){acum+=Date.now()-ini;ini=0}};
+const reanuda=()=>{if((A.length||acum)&&!ini&&!bloq)ini=Date.now()};
+const abierto=i=>DEV||i===0||!!DONE()[i-1];
+const campDone=()=>LV.every((_,i)=>SV.done[i]);
+const pantalla=id=>{document.querySelectorAll('.pant').forEach(p=>p.classList.toggle('on',p.id===id))};
+const ICO={
+ k:'<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="4.5"/><path d="M11.4 12.4L20 20m-3-3l2.2-2.2m-5-1l2-2"/></svg>',
+ cer:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor" fill-opacity=".25"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+ pu:'<svg viewBox="0 0 24 24"><path d="M5 22V10a7 7 0 0114 0v12z" fill="currentColor" fill-opacity=".2"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>',
+ sw:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>',
+ sp:'<svg viewBox="0 0 24 24"><path d="M3 20l4.5-12L12 20l4.5-12L21 20z" fill="currentColor" fill-opacity=".35"/></svg>'};
+const ROT={'>':0,'v':90,'<':180,'^':270};
+const arrow=c=>`<svg viewBox="0 0 24 24" style="transform:rotate(${ROT[c]}deg)"><path d="M4 12h15m-6-6l6 6-6 6"/></svg>`;
+const NOM={a:'coral',b:'azul',A:'coral',B:'azul'};
+function ajustar(){const m=Math.min(76,Math.floor((innerWidth-44)/lv.n),Math.floor((innerHeight-(innerWidth<600?470:400))/lv.m));
+ document.documentElement.style.setProperty('--c',Math.max(30,m)+'px');lv.tam=Math.max(30,m);
+ $('rej').style.gridTemplateColumns=`repeat(${lv.n},var(--c))`;colocar()}
+function colocar(){$('yo').style.transform=`translate(${(S.p%lv.n)*lv.tam}px,${((S.p/lv.n)|0)*lv.tam}px)`}
+function fx(cl){const y=$('yo');y.classList.remove('sacude','pop','tp');void y.offsetWidth;y.classList.add(cl)}
+function say(t,mal){const m=$('msg');m.textContent=t||'';m.classList.toggle('mal',!!mal)}
+/* ---- partida en curso: se guarda la lista de acciones; al restaurar se reproducen con las mismas reglas (así Deshacer sigue funcionando) ---- */
+function guardaP(){if(!lv)return;PA[clave()]={m:MODO,i:cur,a:A.join(''),ms:Math.round(tiempo()),und:undos,rel:SV.relajado};PA.ult=clave();esc(KP,PA)}
+function borraP(){delete PA[clave()];if(PA.ult===clave())delete PA.ult;esc(KP,PA)}
+function cargar(i,fresh,m){
+ if(m)MODO=m;cur=i;clearInterval(reloj);
+ const k=clave(),p=!fresh&&PA[k]&&typeof PA[k].a==='string'?PA[k]:null;
+ lv=nivel(i,p?!!p.rel:SV.relajado,LISTA());S=init(lv);H=[];A=[];undos=0;acum=0;ini=0;bloq=false;enPausa=false;
+ if(p){for(const a of p.a){const r=step(lv,S,a);if(r.err||r.dead||r.win)break;H.push(S);A.push(a);S=r.s}undos=p.und||0;acum=p.ms||0}
+ $('yo').className='';$('inv').hidden=true;
+ const d=DEF(),cp=SEC()[d.c];
+ for(const q of ['suelo','pared','rastro'])document.documentElement.style.setProperty('--'+q,cp[q]);
+ $('titulo').textContent=`${i+1}. ${d.t}`;$('gCap').textContent=cp.n;$('aviso').textContent=A.length?'':(d.h||'');say('');
+ $('dPar').textContent=lv.par===null?'sin solución':lv.lim===Infinity?'Modo relajado':`Ideal ${lv.par}`;
+ const R=$('rej');R.innerHTML='';for(let q=0;q<lv.n*lv.m;q++)R.appendChild(document.createElement('div'));
+ $('bPista').hidden=!tienePista();
+ pantalla('juego');ajustar();dibujar();VIV=null;
+ if(lv.lim<Infinity){const mio=lv;setTimeout(()=>{if(lv===mio)VIV=vivos(mio)},40)}
+ reloj=setInterval(()=>{if(ini&&!bloq){const s=Math.floor(tiempo()/1000);$('dTiempo').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}},500);
+ const s0=Math.floor(acum/1000);$('dTiempo').textContent=Math.floor(s0/60)+':'+String(s0%60).padStart(2,'0');
+ $('capa').classList.remove('on');
+ if(p&&(A.length||acum))pausa('Partida restaurada');else guardaP();
+}
+function dibujar(){
+ const R=$('rej').children;
+ for(let i=0;i<lv.n*lv.m;i++){
+  const c=lv.g[i],v=S.vis[i],e=R[i];let cl='c f',h='';
+  if(c==='#')cl='c w';
+  else if(c==='M'||c==='N'){const cerrado=solido(lv,S,i);cl='c '+(cerrado?'cr':'cro')}
+  else{
+   if(c==='I')cl='c hi';
+   if(v)cl+=' r'+(S.kk?' kk':'');
+   if(c==='k')h=v?'':ICO.k,cl+=' kd';
+   else if(c==='a'||c==='b')h=v?'':ICO.k,cl+=' k'+c;
+   else if(c==='A'||c==='B')h=v?'':ICO.cer,cl+=' ce c'+c.toLowerCase();
+   else if(c==='D')h=ICO.pu,cl+=' pu'+(S.kk>=lv.nk?' ab':'');
+   else if(c==='*')h=ICO.sw,cl+=' sw';
+   else if(ARR[c])h=arrow(c),cl+=' fl';
+   else if(lv.link[i]!==undefined)h=`<span class="po${v?' vis':''}${DORM[c]&&!S.sw?' dorm':''}" style="--h:hsl(${(+c*110+20)%360} 70% 62%)">${'ABCDE'[+c-1]}</span>`;
+   else if(c==='p'||c==='q'){const on=pinchoOn(c,S.t),av=!on&&pinchoFalta(c,S.t)===1;
+    cl+=' sp'+(on?' on':'')+(av?' av':'');h=ICO.sp+`<small>${pinchoFalta(c,S.t)}</small>`}
+  }
+  if(e.className!==cl)e.className=cl;if(e.innerHTML!==h)e.innerHTML=h;
+ }
+ $('dPasos').textContent=lv.lim<Infinity?`Pasos ${S.t}/${lv.lim}`:`Pasos ${S.t}`;
+ $('dPasos').classList.toggle('al',lv.lim<Infinity&&lv.lim-S.t<=2);
+ $('dLlaves').textContent=`🗝 ${S.kk}/${lv.nk}`+(S.inv?` · ${S.inv&1?'coral ':''}${S.inv&2?'azul':''}`:'');
+ colocar();
+}
+function act(a){
+ if(bloq||enPausa)return;const r=step(lv,S,a);
+ if(r.err){fx('sacude');
+  if(r.err==='puerta')say(`La puerta necesita todas las llaves doradas (te faltan ${r.falta}).`,1);
+  else if(r.err==='cerradura')say(`Cerradura ${NOM[r.c]}: necesitas la llave ${NOM[r.c]}.`,1);
+  else say('');return}
+ H.push(S);A.push(a);S=r.s;if(!ini)ini=Date.now();$('aviso').textContent='';
+ let m='';
+ for(const e of r.ev){
+  if(e[0]==='llave'){m=`Llave dorada ${S.kk}/${lv.nk}`+(S.kk===lv.nk?': ¡la puerta se abre!':'');fx('pop')}
+  else if(e[0]==='llaveC'){m=`Llave ${NOM[e[1]]} recogida`;fx('pop')}
+  else if(e[0]==='abre')m=`Cerradura ${NOM[e[1]]} abierta (la llave se gasta)`;
+  else if(e[0]==='inter')m='Interruptor: los cristales y portales dormidos cambian';
+  else if(e[0]==='portal'){m='Portal';fx('tp')}
+  else if(e[0]==='rastro')m='Chocaste con tu rastro: cuenta como esperar 1 paso';
+  else if(e[0]==='esp')m='Esperas un paso';
+ }
+ if(r.ev.some(e=>e[0]==='res'))m=(m?m+' · ':'')+'Te deslizas';
+ if(r.ev.some(e=>e[0]==='flecha'))m=(m?m+' · ':'')+'La flecha te empuja';
+ say(m);dibujar();
+ if(r.win)return gana();
+ guardaP();
+ if(r.dead)return pierde(r.dead);
+ if(lv.lim-S.t<=3&&lv.lim<Infinity)say(m+' ¡Quedan pocos pasos!',1);
+ if(VIV&&!VIV.viable(S))say('Esta ruta ya no tiene salida. Deshaz (Z) o reinicia (R).',1);
+}
+function deshacer(){if(enPausa||(bloq&&!$('capa').classList.contains('on')))return;if(!H.length)return;
+ S=H.pop();A.pop();undos++;HI.und[clave()]=(HI.und[clave()]||0)+1;bloq=false;$('capa').classList.remove('on');$('yo').className='';
+ reanuda();say('Paso deshecho (gratis; queda registrado)');dibujar();guardaP();guardaHI();chequea()}
+function reiniciar(){const k=clave();if(A.length){HI.rei[k]=(HI.rei[k]||0)+1;guardaHI()}cargar(cur,true);chequea()}
+function confeti(){const col=['#f6a8c0','#b9a8e8','#ffd77a','#8fd6cf','#8cc4fa'];
+ for(let i=0;i<34;i++){const e=document.createElement('i');e.className='conf';e.style.left=Math.random()*100+'vw';
+  e.style.background=col[i%5];e.style.animationDelay=Math.random()*.4+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2300)}}
+function caja(h,fin){$('caja').innerHTML=h;$('capa').classList.add('on');if(fin)fin($('caja'))}
+function gana(){
+ bloq=true;freezeT();$('yo').className='gana';confeti();
+ const seg=Math.max(1,Math.round(acum/1000)),pasos=S.t,L=LISTA(),D=DONE();
+ const est=SV.relajado||lv.par===null?1:pasos===lv.par?3:pasos<=lv.par+Math.ceil(L[cur].s/2)?2:1;
+ const prev=D[cur]||{},mejor=!prev.pasos||pasos<prev.pasos;
+ if(!SV.relajado||!prev.pasos)D[cur]={estrellas:Math.max(est,prev.estrellas||0),pasos:Math.min(pasos,prev.pasos||1e9),tiempo:Math.min(seg,prev.tiempo||1e9)};
+ const k=clave();delete HI.rei[k];delete HI.und[k];delete HI.prox[k];delete HI.ped[k];borraP();guardar();guardaHI();
+ const ult=cur===L.length-1,sig=MODO==='c'?'Créditos':'Desafíos';
+ setTimeout(()=>caja(`<h2>${ult?(MODO==='c'?'¡Campaña completada!':'¡Modo Desafío completado!'):'¡Nivel superado!'}</h2>
+  <div class="est">${'★'.repeat(est)}<s>${'★'.repeat(3-est)}</s></div>
+  <p>${pasos} pasos${lv.par?` (ideal ${lv.par})`:''} · ${seg} s · ${undos} deshacer${undos===1?'':'s'}<br>Récord: ${D[cur].pasos} pasos, ${D[cur].tiempo} s${mejor&&prev.pasos?' · ¡nuevo!':''}</p>
+  <p style="font-size:.85rem;opacity:.75">${SV.relajado?'Modo relajado: no se actualizan las estrellas.':`3★ = ruta óptima · 2★ = hasta ${Math.ceil(L[cur].s/2)} paso(s) más · 1★ = dentro del límite.`}</p>
+  <div class="fila"><button id="x1">${ult?sig:'Siguiente'}</button><button class="suave" id="x2">Repetir</button><button class="suave" id="x3">${MODO==='c'?'Capítulos':'Desafíos'}</button></div>`,c=>{
+  c.querySelector('#x1').onclick=()=>ult?(MODO==='c'?creditos():selector()):cargar(cur+1);c.querySelector('#x2').onclick=()=>cargar(cur,true);c.querySelector('#x3').onclick=selector}),500);
+}
+function pierde(r){bloq=true;freezeT();$('yo').className='cae';
+ const txt=r==='pincho'?'Estabas sobre un pincho cuando se activó. El número de cada pincho indica cuántos pasos faltan para que cambie; el borde rojo avisa de que se activará en el próximo paso.':'Llegaste al límite de pasos. Puedes deshacer, reiniciar o activar el modo relajado en Ajustes.';
+ setTimeout(()=>caja(`<h2>${r==='pincho'?'¡Pinchos!':'Sin pasos'}</h2><p>${txt}</p>
+  <div class="fila"><button id="x1">Deshacer</button><button class="suave" id="x2">Reiniciar</button></div>`,c=>{
+  c.querySelector('#x1').onclick=deshacer;c.querySelector('#x2').onclick=reiniciar}),450)}
+/* ---- pausa: congela cronómetro y controles, guarda la partida; salir al menú no borra nada ---- */
+function seguir(){enPausa=false;bloq=false;$('capa').classList.remove('on');reanuda()}
+function pausa(tit){
+ if(!lv||$('capa').classList.contains('on')&&!enPausa)return;
+ freezeT();bloq=true;enPausa=true;guardaP();
+ caja(`<h2>${tit||'Pausa'}</h2><p style="font-size:.88rem">El tiempo está detenido y la partida está guardada${ALM?'':' (¡no disponible en este navegador!)'}.</p><div class="fila" style="flex-direction:column">
+  <button id="x1">▶ Continuar</button>${tienePista()?'<button class="suave" id="x5">💡 Pista</button>':''}<button class="suave" id="x2">Reiniciar este nivel</button><button class="suave" id="x3">Ajustes</button><button class="suave" id="x4">Salir al menú</button></div>`,c=>{
+  c.querySelector('#x1').onclick=seguir;c.querySelector('#x2').onclick=()=>{enPausa=false;reiniciar()};c.querySelector('#x3').onclick=()=>ajustes(()=>pausa());
+  c.querySelector('#x4').onclick=()=>{enPausa=false;guardaP();selector()};if(c.querySelector('#x5'))c.querySelector('#x5').onclick=quierePista})}
+function ajustes(atras){$('capa').classList.add('on');caja(`<h2>Ajustes</h2>
+  <label class="sw2"><input type="checkbox" id="rl" ${SV.relajado?'checked':''}> Modo relajado</label>
+  <p style="font-size:.88rem">Sin límite de pasos. Los pinchos siguen existiendo, y no se ganan estrellas nuevas. Se aplica al reiniciar o cargar un nivel.</p>
+  <button class="suave" id="bor">Borrar progreso</button><button id="x1">Volver</button>`,c=>{
+  c.querySelector('#rl').onchange=e=>{SV.relajado=e.target.checked;guardar()};
+  c.querySelector('#bor').onclick=()=>{if(confirm('¿Borrar TODO el progreso (campaña, Modo Desafío y partidas guardadas)?')){SV.done={};DS.done={};PA={};HI={rei:{},und:{},prox:{},ped:{}};guardar();esc(KP,PA);guardaHI();enPausa=false;selector()}};
+  c.querySelector('#x1').onclick=()=>{$('capa').classList.remove('on');atras&&atras()}})}
+function creditos(){caja(`<h2>Créditos</h2><p>Llave y puerta v6<br>Diseño y código: Yo (vato) y si Claude Ayudo tambien ehg. 30 niveles + 15 del Modo Desafío.</p><p style="font-size:.88rem">Todos los niveles están validados por un solucionador que usa las mismas reglas que el juego.</p><button id="x1">Cerrar</button>`,c=>c.querySelector('#x1').onclick=()=>{$('capa').classList.remove('on');pantalla('inicio')})}
+/* ---- selector (campaña y desafío) ---- */
+function selector(){listar(MODO)}
+function listar(m){
+ MODO=m;enPausa=false;bloq=false;$('capa').classList.remove('on');clearInterval(reloj);$('inv').hidden=true;
+ const L=LISTA(),C=SEC(),D=DONE(),tot=Object.values(D).reduce((a,d)=>a+d.estrellas,0);
+ $('sTotal').textContent=`★ ${tot}/${L.length*3}`;$('sTit').textContent=m==='c'?'Capítulos':'Modo Desafío';
+ const w=$('caps');w.innerHTML='';
+ C.forEach((cp,ci)=>{const d=document.createElement('div');d.className='cap';d.style.margin='0 0 12px';
+  d.innerHTML=`<h3>${m==='c'?'Capítulo '+(ci+1)+': ':''}${cp.n}</h3><small>${cp.sub}</small><div class="rej"></div>`;
+  if(m==='d')d.style.borderLeft='8px solid '+cp.pared;
+  L.forEach((l,i)=>{if(l.c!==ci)return;const b=document.createElement('button'),r=D[i],pa=PA[m+i];
+   b.className='nv'+(r?' ok':'');b.disabled=!abierto(i);b.innerHTML=`<b>${abierto(i)?i+1:'🔒'}</b><i>${r?'★'.repeat(r.estrellas):(pa&&pa.a?'…':'')}</i>`;
+   b.title=l.t+(r?' (completado)':abierto(i)?' (disponible)':' (bloqueado)');b.onclick=()=>cargar(i);d.lastChild.appendChild(b)});
+  w.appendChild(d)});
+ pantalla('selector');
+}
+function entraDesafio(){if(DEV||campDone())return listar('d');
+ const n=Object.keys(SV.done).length;caja(`<h2>🔒 Modo Desafío</h2><p>Se desbloquea al completar los 30 niveles originales (llevas ${n}/30).</p><button id="x1">Entendido</button>`,c=>c.querySelector('#x1').onclick=()=>$('capa').classList.remove('on'))}
+/* ---- pistas ---- */
+const NEED=new Set(LV.map((d,i)=>i).filter(i=>{const m=mecs(LV[i]).filter(x=>x!=='llaves'||true);return m.length>=2||LV[i].par>=17}));
+function mecs(d){const t=d.r.join('');const o=[];
+ if(/[aAbB]/.test(t))o.push('llaves');if(/[pq]/.test(t))o.push('pinchos');if(/[123]/.test(t))o.push('portales');if(/[45]/.test(t))o.push('dorm');
+ if(/I/.test(t))o.push('hielo');if(/[*MN]/.test(t))o.push('inter');if(/[<>^v]/.test(t))o.push('flechas');return o}
+const ETQ={llaves:'Llaves y candados',pinchos:'Pinchos',portales:'Portales',dorm:'Portales dormidos',hielo:'Hielo',inter:'Interruptores y cristales',flechas:'Flechas',ruta:'Planificación de la ruta',incierto:'No estoy seguro'};
+const TX={
+ llaves:['La puerta exige todas las llaves doradas. Una llave de color abre solo la cerradura de su mismo color y se gasta al usarla.','Antes de recoger o gastar una llave de color, piensa qué camino necesitarás después: una cerradura abierta en mal momento puede dejarte sin ruta.'],
+ pinchos:['Cada pincho alterna entre seguro y activo. El número es cuántos pasos faltan para que cambie, y el borde rojo avisa de que se activa en el próximo paso. Pisarlo activo, o seguir encima cuando se activa, te elimina.','Esperar (Espacio) cuenta como un paso: úsalo para llegar justo cuando el pincho esté seguro. Chocar con tu rastro también cuenta como esperar.'],
+ portales:['Un portal te lleva a su pareja (misma letra y color). Ambos extremos quedan en tu rastro y no se pueden reutilizar.','Mira qué casillas quedan detrás de ti al cruzar: desde el destino, ¿aún puedes llegar a lo que falta?'],
+ dorm:['Los portales de aro punteado están dormidos: solo funcionan con el interruptor activado. Pisar el interruptor otra vez los vuelve a dormir.','Si necesitas cruzar uno, el interruptor debe estar activado en ese momento; decide cuándo pisarlo.'],
+ hielo:['En el hielo te deslizas en línea recta hasta que un muro, el borde del tablero o tu rastro te frena. Todas las casillas que cruzas quedan marcadas.','Antes de empujarte, calcula dónde terminarás y qué casillas ocupará tu rastro: ya no podrás volver por ellas.'],
+ inter:['Pisar un interruptor abre los cristales rellenos y cierra los vacíos; si lo pisas de nuevo, se invierten otra vez. También ocurre a mitad de un deslizamiento.','Pisarlo demasiado pronto puede cerrarte un camino que necesitabas: piensa qué cristales deben estar abiertos en cada tramo.'],
+ flechas:['Una flecha te empuja una casilla más en su dirección. Si esa casilla es otra flecha te redirige, y si es hielo te deslizas; un muro o tu rastro detienen el empuje.','Antes de pisar una flecha, sigue mentalmente el empuje y fíjate en qué casilla terminas: esa casilla también queda marcada en tu rastro.'],
+ ruta:['Tu rastro es un obstáculo: cada casilla que pisas deja de estar disponible.','Traza la ruta desde la puerta hacia atrás y busca callejones sin salida. Si el juego avisa de que no hay salida, deshaz.']};
+const PRIO=['pinchos','dorm','flechas','portales','hielo','inter','llaves'];
+const tienePista=()=>lv&&(MODO==='d'||NEED.has(cur));
+function chequea(){if(!tienePista()||enPausa||$('capa').classList.contains('on'))return;const k=clave(),p=HI.prox[k]||{r:3,u:8};
+ if((HI.rei[k]||0)>=p.r||(HI.und[k]||0)>=p.u)invita()}
+function invita(){const b=$('inv');b.innerHTML=`<span>Parece que este nivel se está complicando. ¿Quieres una pista o prefieres seguir intentando?</span><div class="fila"><button id="i1">Quiero una pista</button><button id="i2" class="suave">Prefiero seguir intentando</button></div>`;b.hidden=false;
+ $('i1').onclick=()=>{b.hidden=true;quierePista()};
+ $('i2').onclick=()=>{b.hidden=true;const k=clave();HI.prox[k]={r:(HI.rei[k]||0)+3,u:(HI.und[k]||0)+8};guardaHI()}}
+function abreAyuda(){if(!enPausa){freezeT();bloq=true;enPausa=true}}
+function quierePista(){
+ if(!tienePista())return;abreAyuda();const sec=MODO==='d'?DEF().c:0,k=clave(),n=HI.ped[k]||0;
+ if(sec===0||n>0)return categorias(sec>0);
+ HI.ped[k]=1;guardaHI();
+ caja(sec===1?'<h2>¿Una pista?</h2><p>¿Para qué? Piensa un poco más.</p>':'<h2>Has llegado muy lejos</h2><p>No necesitas una pista todavía.</p>',c=>{
+  c.insertAdjacentHTML('beforeend','<div class="fila"><button id="p1">Sigo intentando</button><button id="p2" class="suave">Aun así, necesito ayuda</button></div>');
+  c.querySelector('#p1').onclick=seguir;c.querySelector('#p2').onclick=()=>categorias(true)})}
+function categorias(conc){
+ const ms=[...mecs(DEF()),'ruta','incierto'];
+ caja(`<h2>¿Qué parte te está costando más?</h2><div class="fila" style="flex-direction:column">${ms.map(m=>`<button class="suave" data-m="${m}">${ETQ[m]}</button>`).join('')}<button id="pc">Cerrar</button></div>`,c=>{
+  c.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>mostrar(b.dataset.m,1,conc));c.querySelector('#pc').onclick=seguir})}
+function siguiente(){
+ try{const d=DEF(),q=(!A.length&&d.sol)?{path:d.sol}:solve(lv,S,150000);
+  if(!q.path)return q.agotado?'No he podido calcularlo desde aquí. Prueba a deshacer unos pasos.':'Desde aquí ya no hay salida: deshaz algunos pasos o reinicia.';
+  const a=q.path[0];return 'Prueba esto como siguiente movimiento: '+({U:'▲ arriba',D:'▼ abajo',L:'◀ izquierda',R:'▶ derecha',W:'esperar un paso (Espacio)'})[a]+'.'}catch(e){return 'No pude calcular la pista.'}}
+function mostrar(m,n,conc){
+ if(m==='incierto')m=PRIO.find(x=>mecs(DEF()).includes(x))||'ruta';
+ const t=TX[m];let cuerpo=conc?`${t[0]}</p><p>${t[1]}`:n===1?t[0]:n===2?t[1]:siguiente();
+ caja(`<h2>${ETQ[m]}</h2><p>${cuerpo}</p><div class="fila">${!conc&&n<3?'<button id="m1">Más ayuda</button>':''}<button class="suave" id="m2">Otro tema</button><button class="suave" id="m3">Cerrar</button></div>`,c=>{
+  if(c.querySelector('#m1'))c.querySelector('#m1').onclick=()=>mostrar(m,n+1,conc);c.querySelector('#m2').onclick=()=>categorias(conc);c.querySelector('#m3').onclick=seguir})}
+/* ---- controles ---- */
+const KEYS={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R',w:'U',s:'D',a:'L',d:'R'};
+addEventListener('keydown',e=>{if(!$('juego').classList.contains('on')||e.ctrlKey||e.metaKey)return;
+ const k=e.key.length===1?e.key.toLowerCase():e.key;
+ if(k==='Escape'||k==='p'){e.preventDefault();enPausa?seguir():pausa();return}
+ if(KEYS[k]){e.preventDefault();act(KEYS[k])}else if(k===' '){e.preventDefault();act('W')}
+ else if(k==='z'||k==='Backspace'){e.preventDefault();deshacer()}else if(k==='r'&&!enPausa)reiniciar()});
+document.querySelectorAll('.pad button').forEach(b=>b.onclick=()=>act(b.dataset.a));
+let tx,ty;const M=$('marco');
+M.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+M.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-tx,dy=t.clientY-ty;if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+ act(Math.abs(dx)>Math.abs(dy)?(dx>0?'R':'L'):(dy>0?'D':'U'))},{passive:true});
+$('bUndo').onclick=deshacer;$('bEsp').onclick=()=>act('W');$('bRei').onclick=reiniciar;$('gMenu').onclick=()=>pausa();$('bPista').onclick=()=>{if(!bloq&&!enPausa)quierePista()};
+$('bJugar').onclick=()=>{const u=PA.ult&&PA[PA.ult];if(u&&u.a!==undefined&&(u.m==='c'||u.m==='d')){MODO=u.m;return cargar(u.i)}
+ MODO='c';let i=0;while(i<LV.length-1&&SV.done[i])i++;cargar(i)};
+$('bNiveles').onclick=()=>listar('c');$('bDesafio').onclick=entraDesafio;$('sVolver').onclick=()=>pantalla('inicio');$('bAjustes').onclick=()=>ajustes();$('bCreditos').onclick=creditos;
+$('bDesafio').textContent=(DEV||campDone())?'⭐ Modo Desafío':'🔒 Modo Desafío';
+$('almX').onclick=()=>$('alm').hidden=true;if(!ALM)avisoALM();
+$('capa').addEventListener('click',e=>{if(e.target.id==='capa'&&$('juego').classList.contains('on')&&!bloq)$('capa').classList.remove('on')});
+addEventListener('resize',()=>{if(lv&&$('juego').classList.contains('on'))ajustar()});
+/* guarda y pausa al salir, apagar pantalla o cambiar de pestaña */
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&lv&&$('juego').classList.contains('on')){if(!$('capa').classList.contains('on'))pausa('Pausa automática');else{freezeT();guardaP()}}});
+addEventListener('pagehide',()=>{if(lv&&$('juego').classList.contains('on')){freezeT();guardaP()}});
+
+
+if(DEV){
+ $('bSol').hidden=false;
+ $('bSol').onclick=async()=>{const q=!A.length&&DEF().sol?{path:DEF().sol}:solve(lv,S,300000);if(!q.path){say('Sin solución desde aquí',1);return}
+  for(const a of q.path){act(a);await new Promise(r=>setTimeout(r,260))}};
+ const b=document.createElement('button');b.textContent='Probar todo (dev)';b.className='suave';b.style.cssText='position:fixed;right:8px;bottom:8px;z-index:5';
+ b.onclick=()=>{const r=runTests(),mal=r.filter(x=>!x.ok);console.table(r);
+  caja(`<h2>Pruebas</h2><p>${r.length-mal.length}/${r.length} correctas</p><pre>${r.map(x=>(x.ok?'OK  ':'FALLA ')+x.n+(x.x?' — '+x.x:'')).join('\n')}</pre><button id="x1">Cerrar</button>`,c=>c.querySelector('#x1').onclick=()=>$('capa').classList.remove('on'))};
+ document.body.appendChild(b);window.LLP={LV,CH,nivel,solve,step,init,vivos,runTests};
+}
+}
+</script>
+</body>
+</html>
